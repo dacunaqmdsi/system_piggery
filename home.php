@@ -18,6 +18,8 @@ if (isset($_SESSION['accountid'])) {
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Dimayacyac's Piggery Farm Management System</title>
+    <!-- Scripts -->
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 
     <!-- Bootstrap CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" />
@@ -175,6 +177,122 @@ if (isset($_SESSION['accountid'])) {
             xmlhttp.open("GET", url, true);
             xmlhttp.send();
         }
+
+        function add_user() {
+            var username = document.getElementById('username').value;
+            var account_password = document.getElementById('account_password').value;
+            var account_type = document.getElementById('account_type').value;
+
+            if (!username) {
+                alert('Username is required');
+                return;
+            }
+            if (!account_password) {
+                alert('Account Password is required');
+                return;
+            }
+            if (!account_type) {
+                alert('Account type is required');
+                return;
+            }
+
+
+            if (confirm("Are you sure you want to create this user?")) {
+                var formData = new FormData();
+                formData.append('username', username);
+                formData.append('account_password', account_password);
+                formData.append('account_type', account_type);
+                formData.append('add_user', 1);
+                $.ajax({
+                    url: 'pages/user_management.php',
+                    type: "POST",
+                    data: formData,
+                    contentType: false,
+                    processData: false,
+                    success: function(data) {
+                        $("#main_content").html(data);
+                        $("#main_content").css('opacity', '1');
+                        // document.getElementById("user_id").value = "";
+                        $('.modal-backdrop').remove();
+                    },
+                    error: function() {
+                        alert("Error occurred while creating the user.");
+                    }
+                });
+            } else {
+                alert("User creation canceled.");
+            }
+        }
+
+        function edit_user() {
+            var accountid = document.getElementById('accountid_edit').value;
+            var username = document.getElementById('username_edit').value.trim();
+            var account_password = document.getElementById('account_password_edit').value.trim();
+            var account_type = document.getElementById('account_type_edit').value;
+
+            if (!username) {
+                alert('Username is required');
+                return;
+            }
+
+            if (!account_type) {
+                alert('Account type is required');
+                return;
+            }
+
+            if (confirm("Are you sure you want to update this user?")) {
+                var formData = new FormData();
+                formData.append('accountid', accountid);
+                formData.append('username', username);
+                formData.append('account_type', account_type);
+                formData.append('update_user', 1);
+
+                if (account_password !== "") {
+                    formData.append('account_password', account_password);
+                }
+
+                $.ajax({
+                    url: 'pages/user_management.php',
+                    type: "POST",
+                    data: formData,
+                    contentType: false,
+                    processData: false,
+                    success: function(data) {
+                        $("#main_content").html(data);
+                        $("#main_content").css('opacity', '1');
+                        $('.modal').modal('hide');
+                        $('.modal-backdrop').remove();
+                    },
+                    error: function() {
+                        alert("Error occurred while updating the user.");
+                    }
+                });
+            } else {
+                alert("User update canceled.");
+            }
+        }
+
+
+
+        function select_user(accountid) {
+            $.ajax({
+                url: 'pages/user_management_select.php',
+                type: "GET",
+                data: {
+                    accountid: accountid
+                },
+                dataType: 'json',
+                success: function(data) {
+                    $('#username_edit').val(data.username);
+                    $('#account_type_edit').val(data.account_type);
+                    $('#accountid_edit').val(data.accountid);
+                    $('#account_password_edit').val(data.account_password);
+                },
+                error: function() {
+                    alert("Error");
+                }
+            });
+        }
     </script>
 </head>
 
@@ -206,8 +324,8 @@ if (isset($_SESSION['accountid'])) {
                 <div class="d-flex align-items-center mb-3">
                     <i class="fas fa-user-circle fa-2x text-white me-2"></i>
                     <div>
-                        <p id="user-name" class="mb-0 fw-semibold text-white">User Name</p>
-                        <small id="user-role" class="text-light">User Role</small>
+                        <p id="user-name" class="mb-0 fw-semibold text-white"><?php echo $_SESSION['username']; ?></p>
+                        <small id="user-role" class="text-light"><?php echo $_SESSION['account_type']; ?></small>
                     </div>
                 </div>
                 <button onclick="window.location.href='pages/logout.php'" class="logout-btn w-100 btn btn-sm text-start text-white">

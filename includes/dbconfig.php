@@ -1,5 +1,5 @@
 <?php
-echo $_SERVER['REQUEST_URI'];
+//echo $_SERVER['REQUEST_URI'];
 error_reporting(0);
 $hostname = 'localhost';
 $dbname   = 'piggery';
