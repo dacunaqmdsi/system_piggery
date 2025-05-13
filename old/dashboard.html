@@ -1,0 +1,287 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard - Piggery Farm MS</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        /* Optional: Add custom styles for dashboard elements if needed */
+        .chart-container {
+            position: relative;
+            height: 300px; /* Adjust height as needed */
+            width: 100%;
+            background-color: white;
+            padding: 1rem;
+            border-radius: 0.5rem;
+            box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
+        }
+    </style>
+</head>
+<body class="bg-gray-100 p-6">
+    <h1 class="text-3xl font-bold text-gray-800 mb-6">Farm Overview Dashboard</h1>
+
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <!-- Chart 1: Pig Population -->
+        <div class="chart-container">
+            <h2 class="text-xl font-semibold text-gray-700 mb-4 text-center">Pig Population Trend</h2>
+            <canvas id="pigPopulationChart"></canvas>
+        </div>
+
+        <!-- Chart 2: Feed Consumption -->
+        <div class="chart-container">
+            <h2 class="text-xl font-semibold text-gray-700 mb-4 text-center">Monthly Feed Consumption (kg)</h2>
+            <canvas id="feedConsumptionChart"></canvas>
+        </div>
+
+        <!-- Chart 3: Sales Overview -->
+        <div class="chart-container">
+            <h2 class="text-xl font-semibold text-gray-700 mb-4 text-center">Sales Overview (Last 6 Months)</h2>
+            <canvas id="salesOverviewChart"></canvas>
+        </div>
+
+        <!-- Chart 4: Health Status -->
+        <div class="chart-container">
+             <h2 class="text-xl font-semibold text-gray-700 mb-4 text-center">Pig Health Status</h2>
+             <canvas id="healthStatusChart"></canvas>
+        </div>
+
+        <!-- Add more chart containers here if needed -->
+
+        <!-- Recent Monitoring Log -->
+        <div class="md:col-span-2 table-container bg-white p-4 rounded-lg shadow">
+             <h2 class="text-xl font-semibold text-gray-700 mb-4">Recent Activity Log</h2>
+             <div class="overflow-x-auto" style="max-height: 300px; overflow-y: auto;">
+                 <table class="min-w-full text-sm">
+                    <thead>
+                         <tr class="border-b">
+                             <th class="py-2 px-3 text-left font-medium text-gray-500 uppercase tracking-wider">Date</th>
+                             <th class="py-2 px-3 text-left font-medium text-gray-500 uppercase tracking-wider">Category/Area</th>
+                             <th class="py-2 px-3 text-left font-medium text-gray-500 uppercase tracking-wider">Notes</th>
+                         </tr>
+                    </thead>
+                    <tbody id="recent-log-body" class="divide-y divide-gray-200">
+                         <!-- Recent log entries will be populated here -->
+                         <tr><td colspan="3" class="text-center text-gray-500 py-4">No recent log entries.</td></tr>
+                    </tbody>
+                 </table>
+            </div>
+        </div>
+
+        <!-- Recent Notifications -->
+        <div class="md:col-span-2 table-container bg-white p-4 rounded-lg shadow">
+            <h2 class="text-xl font-semibold text-gray-700 mb-4">Recent Notifications</h2>
+            <div id="recent-notifications-list" class="space-y-3" style="max-height: 300px; overflow-y: auto;">
+                <!-- Recent notifications will be populated here -->
+                <p id="no-recent-notifications" class="text-center text-gray-500 py-4">No recent notifications.</p>
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        // --- Sample Data (Replace with actual data retrieval logic) ---
+        const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'];
+        const populationData = [120, 135, 150, 145, 160, 175];
+        const feedData = [800, 850, 900, 880, 950, 1000];
+        const salesData = [5000, 5500, 6200, 5800, 6500, 7100];
+        const healthData = { healthy: 160, sick: 10, quarantine: 5 }; // Example
+
+        // --- Chart Initialization ---
+
+        // 1. Pig Population Chart (Line)
+        const popCtx = document.getElementById('pigPopulationChart').getContext('2d');
+        new Chart(popCtx, {
+            type: 'line',
+            data: {
+                labels: months,
+                datasets: [{
+                    label: 'Total Pigs',
+                    data: populationData,
+                    borderColor: 'rgb(75, 192, 192)',
+                    tension: 0.1,
+                    fill: false
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    y: { beginAtZero: true }
+                }
+            }
+        });
+
+        // 2. Feed Consumption Chart (Bar)
+        const feedCtx = document.getElementById('feedConsumptionChart').getContext('2d');
+        new Chart(feedCtx, {
+            type: 'bar',
+            data: {
+                labels: months,
+                datasets: [{
+                    label: 'Feed Consumed (kg)',
+                    data: feedData,
+                    backgroundColor: 'rgba(255, 159, 64, 0.7)',
+                    borderColor: 'rgba(255, 159, 64, 1)',
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    y: { beginAtZero: true }
+                }
+            }
+        });
+
+        // 3. Sales Overview Chart (Bar)
+        const salesCtx = document.getElementById('salesOverviewChart').getContext('2d');
+        new Chart(salesCtx, {
+            type: 'bar', // Or 'line'
+            data: {
+                labels: months, // Assuming last 6 months
+                datasets: [{
+                    label: 'Revenue ($)', // Adjust currency/unit
+                    data: salesData,
+                    backgroundColor: 'rgba(54, 162, 235, 0.7)',
+                    borderColor: 'rgba(54, 162, 235, 1)',
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    y: { beginAtZero: true }
+                }
+            }
+        });
+
+        // 4. Health Status Chart (Doughnut or Pie)
+        const healthCtx = document.getElementById('healthStatusChart').getContext('2d');
+        new Chart(healthCtx, {
+            type: 'doughnut', // Or 'pie'
+            data: {
+                labels: ['Healthy', 'Sick', 'Quarantine'],
+                datasets: [{
+                    label: 'Health Status',
+                    data: [healthData.healthy, healthData.sick, healthData.quarantine],
+                    backgroundColor: [
+                        'rgba(75, 192, 192, 0.7)', // Healthy
+                        'rgba(255, 99, 132, 0.7)',  // Sick
+                        'rgba(255, 206, 86, 0.7)'   // Quarantine
+                    ],
+                    hoverOffset: 4
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+            }
+        });
+
+        // --- Load Recent Logs & Notifications --- 
+        const MONITORING_LOG_KEY = 'farmMonitoringLog';
+
+        function getLogEntries() {
+            const logJson = localStorage.getItem(MONITORING_LOG_KEY);
+            try {
+                return logJson ? JSON.parse(logJson) : [];
+            } catch (e) {
+                console.error("Error parsing monitoring log from localStorage:", e);
+                return [];
+            }
+        }
+
+        function renderRecentLogs() {
+            const logs = getLogEntries();
+            const recentLogBody = document.getElementById('recent-log-body');
+            recentLogBody.innerHTML = ''; // Clear
+
+            if (logs.length === 0) {
+                 recentLogBody.innerHTML = '<tr><td colspan="3" class="text-center text-gray-500 py-4">No recent log entries.</td></tr>';
+                 return;
+            }
+
+            // Sort by date descending and take top 5
+            const recentLogs = logs.sort((a, b) => new Date(b.date) - new Date(a.date)).slice(0, 5);
+
+            recentLogs.forEach(log => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td class="py-2 px-3 whitespace-nowrap">${log.date}</td>
+                    <td class="py-2 px-3">${log.category}</td>
+                    <td class="py-2 px-3 whitespace-pre-wrap">${log.notes}</td>
+                `;
+                recentLogBody.appendChild(row);
+            });
+        }
+
+        const placeholderNotifications = [
+             { id: 'n1', type: 'warning', title: 'Low Feed Stock', message: 'Feed quantity for Fatteners is below 50kg.', timestamp: '2023-11-15 08:30 AM' },
+             { id: 'n2', type: 'info', title: 'Vaccination Reminder', message: 'Sow Pen S2 is due for vaccination next week.', timestamp: '2023-11-14 10:00 AM' },
+             { id: 'n3', type: 'success', title: 'New Birth Recorded', message: 'A new birth record was added for Sow Pen S1 (10 alive).', timestamp: '2023-11-13 02:15 PM' },
+             { id: 'n4', type: 'info', title: 'System Update', message: 'Welcome to the updated Piggery Farm Management System!', timestamp: '2023-11-10 09:00 AM' }
+        ];
+
+         function renderRecentNotifications() {
+            const notifications = placeholderNotifications; // Using placeholders
+            const listElement = document.getElementById('recent-notifications-list');
+            const noNotificationsElement = document.getElementById('no-recent-notifications');
+            listElement.innerHTML = ''; // Clear
+
+            if (notifications.length === 0) {
+                listElement.appendChild(noNotificationsElement);
+                noNotificationsElement.classList.remove('hidden');
+            } else {
+                 noNotificationsElement.classList.add('hidden');
+                 // Take top 3-4 notifications for dashboard
+                notifications.slice(0, 4).forEach(n => {
+                    const div = document.createElement('div');
+                    div.classList.add('text-sm', 'p-2', 'rounded', 'border-l-4');
+                    let iconClass = 'fa-info-circle';
+                    let borderColor = 'border-blue-400';
+                    let bgColor = 'bg-blue-50';
+
+                    switch (n.type) {
+                        case 'warning': iconClass = 'fa-exclamation-triangle'; borderColor = 'border-yellow-400'; bgColor = 'bg-yellow-50'; break;
+                        case 'success': iconClass = 'fa-check-circle'; borderColor = 'border-green-400'; bgColor = 'bg-green-50'; break;
+                        case 'error': iconClass = 'fa-times-circle'; borderColor = 'border-red-400'; bgColor = 'bg-red-50'; break;
+                    }
+                    div.classList.add(borderColor, bgColor);
+
+                    div.innerHTML = `
+                         <div class="flex items-start">
+                             <i class="fas ${iconClass} mr-2 mt-1 opacity-75"></i>
+                             <div>
+                                 <p class="font-semibold">${n.title}</p>
+                                 <p class="text-xs text-gray-600">${n.message}</p>
+                                 <p class="text-xs text-gray-400 mt-1">${n.timestamp}</p>
+                             </div>
+                         </div>
+                     `;
+                    listElement.appendChild(div);
+                });
+            }
+        }
+
+        // Initial render on dashboard load
+        renderRecentLogs();
+        renderRecentNotifications();
+        
+        // Example:
+        // function fetchAndUpdateCharts() {
+        //     // Fetch data from localStorage or backend
+        //     // const latestData = fetchData();
+        //     // pigPopulationChart.data.datasets[0].data = latestData.population;
+        //     // pigPopulationChart.update();
+        //     // ... update other charts ...
+        // }
+        // Call fetchAndUpdateCharts() periodically or on data change
+    </script>
+
+</body>
+</html>

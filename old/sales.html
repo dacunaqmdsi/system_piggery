@@ -1,0 +1,750 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sales & Receipts - Piggery Farm MS</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        /* Consistent UI Styles from index.html */
+        .btn-primary { background: linear-gradient(135deg, #e546b5 0%, #e546b5 100%); color: white; transition: all 0.2s ease; }
+        .btn-primary:hover { background: linear-gradient(135deg, #e546b5 0%, #e546b5 100%); transform: translateY(-1px); box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        .btn-secondary { background: #f3f4f6; color: #e54698; transition: all 0.2s ease; }
+        .btn-secondary:hover { background: #e5e7eb; transform: translateY(-1px); box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        .btn-danger { background-color: #ef4444; color: white; transition: all 0.2s ease; }
+        .btn-danger:hover { background-color: #dc2626; transform: translateY(-1px); box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        .input-field { border: 2px solid #e5e7eb; transition: all 0.2s ease; padding: 0.75rem; border-radius: 0.5rem; width: 100%; }
+        .input-field:focus { border-color: #e546b5; box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1); outline: none; }
+        .select-field { border: 2px solid #e5e7eb; transition: all 0.2s ease; padding: 0.75rem; border-radius: 0.5rem; width: 100%; background-color: white; }
+        .select-field:focus { border-color: #e546b5; box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1); outline: none; }
+        .card { background-color: white; border-radius: 0.5rem; box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06); padding: 1.5rem; }
+        .table-container { background-color: white; padding: 1.5rem; border-radius: 0.5rem; box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06); }
+        th { background-color: #f9fafb; color: #374151; font-weight: 600; text-align: left; padding: 0.75rem 1rem; }
+        td { padding: 0.75rem 1rem; border-bottom: 1px solid #e5e7eb; color: #1f2937; }
+        tbody tr:last-child td { border-bottom: none; }
+        .receipt-display {
+            background-color: #fff;
+            border: 1px solid #ddd;
+            padding: 2rem;
+            font-family: 'Courier New', Courier, monospace;
+            width: 100%;
+            max-width: 600px;
+            margin: 1rem auto;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+         .receipt-display h3 { text-align: center; margin-bottom: 1rem; font-size: 1.5em; }
+         .receipt-display p { margin-bottom: 0.5rem; font-size: 0.9em; }
+         .receipt-display table { width: 100%; margin-top: 1rem; font-size: 0.9em; border-collapse: collapse; }
+         .receipt-display th, .receipt-display td { text-align: left; padding: 5px; border-bottom: 1px dashed #ccc; }
+         .receipt-display th:last-child, .receipt-display td:last-child { text-align: right; }
+         .receipt-display .total-line td { border-top: 1px solid #000; border-bottom: none; font-weight: bold; padding-top: 10px; }
+         .receipt-display .footer { text-align: center; margin-top: 2rem; font-size: 0.8em; color: #555; }
+    </style>
+</head>
+<body class="bg-gray-100 p-6">
+
+    <h1 class="text-3xl font-bold text-gray-800 mb-6">Record New Sale</h1>
+
+    <!-- Sale Input Form -->
+    <div class="card mb-8">
+        <form id="sale-form" onsubmit="generateReceipt(event)">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                <div>
+                    <label for="sale-date" class="block text-gray-700 font-medium mb-1">Date</label>
+                    <input id="sale-date" type="date" class="input-field" required>
+                </div>
+                <div>
+                    <label for="customer-name" class="block text-gray-700 font-medium mb-1">Customer Name</label>
+                    <select id="customer-name-select" class="select-field" required>
+                        <option value="" disabled selected>-- Select Customer --</option>
+                        <option value="_guest_">Guest/Walk-in Customer</option>
+                        <!-- Customer options will be populated by JS -->
+                    </select>
+                    <input type="hidden" id="customer-name-hidden"> <!-- To store the actual name for the receipt -->
+                </div>
+            </div>
+
+            <h3 class="text-lg font-semibold text-gray-700 mt-4 mb-2 border-t pt-4">Sale Items</h3>
+            <div id="sale-items-container" class="space-y-3 mb-4">
+                <!-- Item rows will be added here -->
+                <div class="flex items-end gap-3 border-b pb-3 sale-item-row flex-wrap">
+                    <div class="flex-grow w-full md:w-1/4 mb-2 md:mb-0">
+                        <label class="block text-gray-700 text-sm font-medium mb-1">Source Pen</label>
+                        <select class="select-field item-pen-select" required onchange="handlePenSelection(this)">
+                            <option value="" selected disabled>-- Select Pen --</option>
+                            <!-- Pen options populated by JS -->
+                        </select>
+                        <input type="hidden" class="item-pen-name"> <!-- Store pen name for receipt -->
+                    </div>
+                    <div class="flex-grow w-full md:w-1/4 mb-2 md:mb-0">
+                        <label class="block text-gray-700 text-sm font-medium mb-1">Select Pig Type</label>
+                        <select class="select-field item-pig-type-select" required onchange="updateItemDescription(this)">
+                            <option value="" selected disabled>-- Select Pen First --</option>
+                            <!-- Type options populated by JS based on Pen selection -->
+                        </select>
+                        <input type="hidden" class="item-description">
+                    </div>
+                    <div class="flex-grow w-full md:w-1/4 mb-2 md:mb-0 mt-2" style="display: none;"> <!-- Input for 'Other' type -->
+                        <label class="block text-gray-700 text-sm font-medium mb-1">Specify Other Type</label>
+                        <input type="text" placeholder="Enter custom type/description" class="input-field item-other-description">
+                    </div>
+                    <div style="width: 100px;" class="mb-2 md:mb-0">
+                        <label class="block text-gray-700 text-sm font-medium mb-1">Quantity</label>
+                        <input type="number" min="1" step="1" value="1" class="input-field item-quantity" required>
+                    </div>
+                    <div style="width: 120px;" class="mb-2 md:mb-0">
+                        <label class="block text-gray-700 text-sm font-medium mb-1">Unit Price</label>
+                        <input type="number" min="0" step="0.01" value="0.00" class="input-field item-price" required>
+                    </div>
+                    <button type="button" onclick="removeSaleItem(this)" class="btn-danger px-3 py-2 rounded-lg self-end"><i class="fas fa-trash-alt"></i></button>
+                </div>
+            </div>
+            <button type="button" onclick="addSaleItem()" class="btn-secondary px-4 py-2 rounded-lg font-semibold text-sm mb-4">
+                <i class="fas fa-plus mr-1"></i> Add Item
+            </button>
+
+            <div class="text-right border-t pt-4">
+                 <h3 class="text-xl font-bold text-gray-800">Grand Total: <span id="grand-total">₱0.00</span></h3>
+            </div>
+
+            <p id="sale-form-error" class="text-red-500 hidden mt-4 text-sm"></p>
+            <div class="mt-6 flex justify-end">
+                <button type="submit" class="btn-primary px-6 py-3 rounded-lg font-semibold">
+                    <i class="fas fa-receipt mr-2"></i>Generate Receipt & Record Sale
+                </button>
+            </div>
+        </form>
+    </div>
+
+    <!-- Receipt Display Area (Initially Hidden) -->
+    <div id="receipt-display-container" class="hidden mb-8">
+         <h2 class="text-2xl font-bold text-gray-800 mb-4 text-center">Sale Receipt</h2>
+         <div id="receipt-content" class="receipt-display">
+             <!-- Receipt details will be populated here -->
+         </div>
+         <div class="text-center mt-4">
+            <button onclick="printReceipt()" class="btn-secondary px-4 py-2 rounded-lg"><i class="fas fa-print mr-1"></i> Print Receipt</button>
+             <button onclick="closeReceiptDisplay()" class="btn-secondary px-4 py-2 rounded-lg ml-2">Close</button>
+         </div>
+    </div>
+
+    <!-- Sales History -->
+    <div>
+        <h2 class="text-2xl font-bold text-gray-800 mb-4">Sales History</h2>
+        <!-- Search Bar -->
+        <div class="mb-4">
+            <input type="text" id="sales-search-input" placeholder="Search by Receipt ID..." class="input-field max-w-sm" oninput="filterSalesHistory()">
+        </div>
+
+        <div class="table-container overflow-x-auto">
+            <table class="min-w-full divide-y divide-gray-200">
+                <thead>
+                    <tr>
+                        <th>Receipt ID</th>
+                        <th>Date</th>
+                        <th>Customer</th>
+                        <th>Total Amount</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="sales-history-body" class="bg-white divide-y divide-gray-200">
+                    <!-- Sales history rows will be populated here -->
+                     <tr><td colspan="5" class="text-center text-gray-500 py-4">No sales recorded yet.</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+
+<script>
+    const saleItemsContainer = document.getElementById('sale-items-container');
+    const saleForm = document.getElementById('sale-form');
+    const grandTotalSpan = document.getElementById('grand-total');
+    const saleDateInput = document.getElementById('sale-date');
+    const customerNameSelect = document.getElementById('customer-name-select');
+    const customerNameHidden = document.getElementById('customer-name-hidden');
+    const saleFormError = document.getElementById('sale-form-error');
+    const receiptDisplayContainer = document.getElementById('receipt-display-container');
+    const receiptContent = document.getElementById('receipt-content');
+    const salesHistoryBody = document.getElementById('sales-history-body');
+
+    const SALES_STORAGE_KEY = 'farmSales';
+    const CUSTOMERS_STORAGE_KEY = 'farmCustomers';
+    const PENS_STORAGE_KEY = 'farmPens';
+    // Add PIGS_STORAGE_KEY or PRODUCTS_STORAGE_KEY here when needed for inventory
+    const PIGS_STORAGE_KEY = 'farmPigs';
+    // const PRODUCTS_STORAGE_KEY = 'farmProducts';
+
+    // --- Data Handling ---
+    function getSalesFromStorage() {
+        const salesJson = localStorage.getItem(SALES_STORAGE_KEY);
+        try {
+            // Sales stored as an array: [ { receiptId: "...", date: "...", items: [...], grandTotal: ... }, ... ]
+            return salesJson ? JSON.parse(salesJson) : [];
+        } catch (e) {
+            console.error("Error parsing sales from localStorage:", e);
+            return [];
+        }
+    }
+
+    function saveSalesToStorage(sales) {
+        try {
+            localStorage.setItem(SALES_STORAGE_KEY, JSON.stringify(sales));
+        } catch (e) {
+            console.error("Error saving sales to localStorage:", e);
+            alert("Could not save sales data. Storage might be full.");
+        }
+    }
+
+    // Function to get customers from localStorage
+    function getCustomersFromStorage() {
+        const customersJson = localStorage.getItem(CUSTOMERS_STORAGE_KEY);
+        try {
+            // Assuming customers are stored as an array: [ { id: "...", name: "...", ... }, ... ]
+            return customersJson ? JSON.parse(customersJson) : [];
+        } catch (e) {
+            console.error("Error parsing customers from localStorage:", e);
+            return [];
+        }
+    }
+
+    // Function to get pens from localStorage
+    function getPensFromStorage() {
+        const pensJson = localStorage.getItem(PENS_STORAGE_KEY);
+        try {
+            // Assuming pens are stored as an array: [ { id: "pen-...". name: "Pen F5", ... }, ... ]
+            return pensJson ? JSON.parse(pensJson) : [];
+        } catch (e) {
+            console.error("Error parsing pens from localStorage:", e);
+            return [];
+        }
+    }
+
+    // Function to get pigs from localStorage
+    function getPigsFromStorage() {
+        const pigsJson = localStorage.getItem(PIGS_STORAGE_KEY);
+        try {
+            // Assuming pigs are stored as an array: [ { id: "pig-...". tag: "101", type: "Fattener", penId: "pen-...", ... }, ... ]
+            return pigsJson ? JSON.parse(pigsJson) : [];
+        } catch (e) {
+            console.error("Error parsing pigs from localStorage:", e);
+            return [];
+        }
+    }
+
+    // --- Sale Form Logic ---
+    function addSaleItem() {
+        const newItemRow = document.createElement('div');
+        newItemRow.classList.add('flex', 'items-end', 'gap-3', 'border-b', 'pb-3', 'sale-item-row', 'flex-wrap');
+        newItemRow.innerHTML = `
+            <div class="flex-grow w-full md:w-1/4 mb-2 md:mb-0">
+                 <label class="block text-gray-700 text-sm font-medium mb-1">Source Pen</label>
+                 <select class="select-field item-pen-select" required onchange="handlePenSelection(this)">
+                     <option value="" selected disabled>-- Select Pen --</option>
+                     <!-- Pen options populated by JS -->
+                 </select>
+                 <input type="hidden" class="item-pen-name">
+            </div>
+            <div class="flex-grow w-full md:w-1/4 mb-2 md:mb-0">
+                 <label class="block text-gray-700 text-sm font-medium mb-1">Select Pig Type</label>
+                 <select class="select-field item-pig-type-select" required onchange="updateItemDescription(this)">
+                     <option value="" selected disabled>-- Select Pen First --</option>
+                     <!-- Type options populated by JS based on Pen selection -->
+                 </select>
+                 <input type="hidden" class="item-description">
+            </div>
+            <div class="flex-grow w-full md:w-1/4 mb-2 md:mb-0 mt-2" style="display: none;"> <!-- Input for 'Other' type -->
+                 <label class="block text-gray-700 text-sm font-medium mb-1">Specify Other Type</label>
+                 <input type="text" placeholder="Enter custom type/description" class="input-field item-other-description">
+            </div>
+            <div style="width: 100px;" class="mb-2 md:mb-0">
+                  <label class="block text-gray-700 text-sm font-medium mb-1">Quantity</label>
+                  <input type="number" min="1" step="1" value="1" class="input-field item-quantity" required>
+            </div>
+            <div style="width: 120px;" class="mb-2 md:mb-0">
+                   <label class="block text-gray-700 text-sm font-medium mb-1">Unit Price</label>
+                   <input type="number" min="0" step="0.01" value="0.00" class="input-field item-price" required>
+            </div>
+            <button type="button" onclick="removeSaleItem(this)" class="btn-danger px-3 py-2 rounded-lg self-end"><i class="fas fa-trash-alt"></i></button>
+        `;
+        saleItemsContainer.appendChild(newItemRow);
+
+        // Populate the pen dropdown for the new row
+        const newPenSelect = newItemRow.querySelector('.item-pen-select');
+        populatePenDropdown(newPenSelect);
+
+        // Add event listeners for totals for the new row inputs
+        const qtyInput = newItemRow.querySelector('.item-quantity');
+        const priceInput = newItemRow.querySelector('.item-price');
+        qtyInput.addEventListener('input', updateTotals);
+        priceInput.addEventListener('input', updateTotals);
+        qtyInput.setAttribute('data-listener-added', 'true');
+        priceInput.setAttribute('data-listener-added', 'true');
+
+        updateTotals(); // Recalculate totals
+    }
+
+    function removeSaleItem(button) {
+        const rowToRemove = button.closest('.sale-item-row');
+        // Prevent removing the last item row
+        if (saleItemsContainer.querySelectorAll('.sale-item-row').length > 1) {
+            rowToRemove.remove();
+            updateTotals(); // Recalculate when item is removed
+        } else {
+            alert("You must have at least one item in the sale.");
+        }
+    }
+
+    function updateTotals() {
+        let grandTotal = 0;
+        const itemRows = saleItemsContainer.querySelectorAll('.sale-item-row');
+
+        itemRows.forEach(row => {
+            const quantityInput = row.querySelector('.item-quantity');
+            const priceInput = row.querySelector('.item-price');
+            const lineTotalInput = row.querySelector('.item-line-total');
+
+            const quantity = parseInt(quantityInput.value, 10) || 0; // Use parseInt for units
+            const price = parseFloat(priceInput.value) || 0;
+            const lineTotal = quantity * price;
+
+            lineTotalInput.value = `₱${lineTotal.toFixed(2)}`;
+            grandTotal += lineTotal;
+        });
+
+        grandTotalSpan.textContent = `₱${grandTotal.toFixed(2)}`;
+
+        // Add event listeners to new inputs if they don't have them
+        itemRows.forEach(row => {
+             const qtyInput = row.querySelector('.item-quantity');
+             const prcInput = row.querySelector('.item-price');
+             if (!qtyInput.hasAttribute('data-listener-added')) {
+                 qtyInput.addEventListener('input', updateTotals);
+                 qtyInput.setAttribute('data-listener-added', 'true');
+             }
+             if (!prcInput.hasAttribute('data-listener-added')) {
+                 prcInput.addEventListener('input', updateTotals);
+                 prcInput.setAttribute('data-listener-added', 'true');
+             }
+        });
+    }
+
+    // --- Receipt Generation & Saving ---
+    function generateReceipt(event) {
+        event.preventDefault();
+        saleFormError.classList.add('hidden');
+        saleFormError.textContent = '';
+
+        const date = saleDateInput.value;
+        const selectedCustomerOption = customerNameSelect.options[customerNameSelect.selectedIndex];
+        const customerId = selectedCustomerOption.value;
+        const customerName = customerId === '_guest_' ? 'Guest/Walk-in' : selectedCustomerOption.text;
+        customerNameHidden.value = customerName; // Store the display name
+
+        const items = [];
+        let currentGrandTotal = 0;
+        let formIsValid = true;
+
+        if (!date) {
+            saleFormError.innerText = "Please select a valid date.";
+            saleFormError.classList.remove('hidden');
+            return;
+        }
+
+        saleItemsContainer.querySelectorAll('.sale-item-row').forEach(row => {
+            const typeSelect = row.querySelector('.item-pig-type-select');
+            const otherInput = row.querySelector('.item-other-description');
+            const descriptionInput = row.querySelector('.item-description'); // The hidden input
+            const quantityInput = row.querySelector('.item-quantity');
+            const priceInput = row.querySelector('.item-price');
+            const penSelect = row.querySelector('.item-pen-select');
+            const penNameInput = row.querySelector('.item-pen-name');
+
+            // Update the hidden description field based on current state
+            updateItemDescription(typeSelect);
+
+            const description = descriptionInput.value.trim();
+            const quantity = parseInt(quantityInput.value, 10); // Use parseInt for units
+            const price = parseFloat(priceInput.value);
+            const selectedPenOption = penSelect.options[penSelect.selectedIndex];
+            const penId = selectedPenOption.value;
+            const penName = penId ? selectedPenOption.text : '';
+            penNameInput.value = penName;
+
+            // Log the values being validated
+            console.log("Validating item:", { penId, penName, description, quantity, price });
+
+            // Updated Validation (pen, type description, integer quantity):
+            if (!penId || !description || typeSelect.value === '' || isNaN(quantity) || quantity <= 0 || !Number.isInteger(quantity) || isNaN(price) || price < 0) {
+                formIsValid = false;
+                row.style.borderLeft = '3px solid red';
+            } else {
+                 row.style.borderLeft = 'none'; // Clear indicator if valid
+            }
+
+            const lineTotal = quantity * price;
+            items.push({ 
+                penId, 
+                penName, 
+                description, 
+                quantity, // Now represents kg
+                price,    // Now represents price per kg
+                lineTotal 
+            });
+            currentGrandTotal += lineTotal;
+        });
+
+        if (!formIsValid) {
+             saleFormError.innerText = "Please ensure all items have a valid Pen, Type, Description (if 'Other'), Quantity (>0, whole number), and Price (>=0). Check highlighted rows.";
+             saleFormError.classList.remove('hidden');
+             return;
+        }
+        if (items.length === 0) {
+            saleFormError.innerText = "Please add at least one item to the sale.";
+            saleFormError.classList.remove('hidden');
+            return;
+        }
+
+        const receiptId = `RCPT-${Date.now()}`;
+        const newSale = {
+            receiptId: receiptId,
+            date: date,
+            customer: customerName,
+            customerId: customerId === '_guest_' ? null : customerId,
+            items: items,
+            grandTotal: currentGrandTotal
+        };
+
+        // Save the sale
+        const sales = getSalesFromStorage();
+        sales.push(newSale);
+        saveSalesToStorage(sales);
+
+        // Display the receipt
+        displayReceipt(newSale);
+
+        // Reset form (leave only one item row)
+        saleForm.reset();
+        saleItemsContainer.innerHTML = ''; // Clear all items
+        addSaleItem(); // Add back one empty item row
+        updateTotals(); // Reset totals display
+
+        // Refresh sales history
+        renderSalesHistory();
+
+        console.log("Validation passed, attempting to save sale..."); // Debug log
+
+        // --- !!! Inventory Check Placeholder !!! ---
+        // Before saving, you MUST check if the required quantity exists for each item.
+        let inventoryCheckPassed = true;
+        for (const item of items) {
+            // const hasEnough = checkPenInventory(item.penId, item.description, item.quantity);
+            // if (!hasEnough) {
+            //     inventoryCheckPassed = false;
+            //     alert(`Error: Not enough ${item.description} pigs available in ${item.penName}. Required: ${item.quantity}`);
+            //     break; 
+            // }
+            console.warn(`Inventory check needed for ${item.quantity} x ${item.description} in ${item.penName}`);
+        }
+
+        if (!inventoryCheckPassed) {
+             saleFormError.innerText = "Inventory check failed. Please adjust quantities.";
+             saleFormError.classList.remove('hidden');
+             return;
+        }
+        // --- End Inventory Check Placeholder ---
+
+        // Display the receipt
+        displayReceipt(newSale);
+
+        // Reset form (leave only one item row)
+        saleForm.reset();
+        saleItemsContainer.innerHTML = ''; // Clear all items
+        addSaleItem(); // Add back one empty item row
+        updateTotals(); // Reset totals display
+
+        // Refresh sales history
+        renderSalesHistory();
+    }
+
+    // --- Receipt Display Logic ---
+     function displayReceipt(saleData) {
+         let itemsHtml = '';
+         saleData.items.forEach(item => {
+             itemsHtml += `
+                 <tr>
+                     <td>${item.description}</td>
+                     <td>${item.quantity}</td>
+                     <td>₱${item.price.toFixed(2)}</td>
+                     <td>₱${item.lineTotal.toFixed(2)}</td>
+                 </tr>
+             `;
+         });
+
+         receiptContent.innerHTML = `
+             <h3>Piggery Farm Sale Receipt</h3>
+             <p><strong>Receipt ID:</strong> ${saleData.receiptId}</p>
+             <p><strong>Date:</strong> ${saleData.date}</p>
+             <p><strong>Customer:</strong> ${saleData.customer}</p>
+             <table>
+                 <thead>
+                     <tr>
+                         <th>Item</th>
+                         <th>Qty</th>
+                         <th>Unit Price</th>
+                         <th>Total</th>
+                     </tr>
+                 </thead>
+                 <tbody>
+                     ${itemsHtml}
+                 </tbody>
+                 <tfoot>
+                    <tr class="total-line">
+                         <td colspan="3"><strong>Grand Total:</strong></td>
+                         <td><strong>₱${saleData.grandTotal.toFixed(2)}</strong></td>
+                    </tr>
+                 </tfoot>
+             </table>
+             <p class="footer">Thank you for your purchase!</p>
+         `;
+         receiptDisplayContainer.classList.remove('hidden');
+         window.scrollTo(0, receiptDisplayContainer.offsetTop - 20); // Scroll to receipt
+     }
+
+    function closeReceiptDisplay() {
+        receiptDisplayContainer.classList.add('hidden');
+    }
+
+    function printReceipt() {
+         const printContent = receiptContent.innerHTML;
+         const printWindow = window.open('', '_blank', 'height=600,width=800');
+         printWindow.document.write('<html><head><title>Print Receipt</title>');
+
+         printWindow.document.write('<style> body { font-family: monospace; margin: 20px; } table { width: 100%; border-collapse: collapse; margin-top: 1rem; } th, td { border-bottom: 1px dashed #ccc; padding: 5px; text-align: left; } td:last-child, th:last-child { text-align: right; } .total-line td { border-top: 1px solid #000; border-bottom: none; font-weight: bold; } .footer { margin-top: 2rem; text-align: center; font-size: 0.8em; } </style>');
+         printWindow.document.write('</head><body>');
+         printWindow.document.write(printContent);
+         printWindow.document.write('</body></html>');
+         printWindow.document.close();
+         printWindow.focus();
+         printWindow.print();
+         printWindow.close(); // Use this if you want it to close automatically after print dialog
+    }
+
+    // --- Sales History Logic ---
+    function renderSalesHistory() {
+        const sales = getSalesFromStorage();
+        salesHistoryBody.innerHTML = ''; // Clear existing
+
+        if (sales.length === 0) {
+            salesHistoryBody.innerHTML = '<tr><td colspan="5" class="text-center text-gray-500 py-4">No sales recorded yet.</td></tr>';
+            return;
+        }
+
+        // Sort by date descending (most recent first)
+         sales.sort((a, b) => new Date(b.date) - new Date(a.date));
+
+        sales.forEach(sale => {
+            const row = document.createElement('tr');
+            row.innerHTML = `
+                <td>${sale.receiptId}</td>
+                <td>${sale.date}</td>
+                <td>${sale.customer}</td>
+                <td>₱${sale.grandTotal.toFixed(2)}</td>
+                <td class="text-center space-x-2">
+                    <button onclick="viewReceipt('${sale.receiptId}')" class="text-blue-600 hover:text-blue-800 transition duration-150 ease-in-out" title="View Receipt">
+                        <i class="fas fa-eye"></i>
+                    </button>
+                     <button onclick="deleteSale('${sale.receiptId}')" class="text-red-600 hover:text-red-800 transition duration-150 ease-in-out" title="Delete Sale">
+                         <i class="fas fa-trash-alt"></i>
+                     </button>
+                </td>
+            `;
+            salesHistoryBody.appendChild(row);
+        });
+    }
+
+    function viewReceipt(receiptId) {
+        const sales = getSalesFromStorage();
+        const saleData = sales.find(s => s.receiptId === receiptId);
+        if (saleData) {
+            displayReceipt(saleData);
+        } else {
+            alert('Error: Could not find receipt data.');
+        }
+    }
+
+     function deleteSale(receiptId) {
+         if (!confirm(`Are you sure you want to delete sale ${receiptId}? This action cannot be undone and might affect reporting.`)) {
+            return;
+         }
+         let sales = getSalesFromStorage();
+         const initialLength = sales.length;
+         sales = sales.filter(s => s.receiptId !== receiptId);
+
+         if (sales.length < initialLength) {
+            saveSalesToStorage(sales);
+            renderSalesHistory();
+             // Optional: If the deleted receipt was being displayed, close it
+             const displayedReceiptId = receiptContent.querySelector('p:first-child strong')?.nextSibling?.textContent?.trim();
+             if(displayedReceiptId === receiptId){
+                 closeReceiptDisplay();
+             }
+         } else {
+             alert("Error: Sale record not found for deletion.");
+         }
+     }
+
+    // --- Customer Dropdown Population ---
+    function populateCustomerDropdown() {
+        const customers = getCustomersFromStorage();
+        customerNameSelect.innerHTML = ''; // Clear existing options except the placeholder
+
+        // Add default and guest options first
+        const defaultOption = document.createElement('option');
+        defaultOption.value = "";
+        defaultOption.textContent = "-- Select Customer --";
+        defaultOption.disabled = true;
+        defaultOption.selected = true;
+        customerNameSelect.appendChild(defaultOption);
+
+        const guestOption = document.createElement('option');
+        guestOption.value = "_guest_";
+        guestOption.textContent = "Guest/Walk-in Customer";
+        customerNameSelect.appendChild(guestOption);
+
+        // Sort customers by name (optional but helpful)
+        customers.sort((a, b) => a.name.localeCompare(b.name));
+
+        customers.forEach(customer => {
+            if (customer.id && customer.name) { // Ensure basic data exists
+                const option = document.createElement('option');
+                option.value = customer.id; // Use ID as value
+                option.textContent = customer.name; // Display name
+                customerNameSelect.appendChild(option);
+            }
+        });
+    }
+
+    // --- Pen Dropdown Population ---
+    function populatePenDropdown(selectElement) {
+        if (!selectElement) return;
+        const pens = getPensFromStorage();
+        // Keep existing placeholder/selected option if needed, or clear fully:
+        const currentSelection = selectElement.value; 
+        selectElement.innerHTML = ''; // Clear existing options
+
+        const defaultOption = document.createElement('option');
+        defaultOption.value = "";
+        defaultOption.textContent = "-- Select Pen --";
+        defaultOption.disabled = true;
+        selectElement.appendChild(defaultOption);
+
+        pens.sort((a, b) => a.name.localeCompare(b.name)); // Sort by name
+
+        pens.forEach(pen => {
+            if (pen.id && pen.name) {
+                const option = document.createElement('option');
+                option.value = pen.id;
+                option.textContent = pen.name;
+                selectElement.appendChild(option);
+            }
+        });
+
+        // Restore selection if possible, otherwise select placeholder
+        if (pens.some(p => p.id === currentSelection)) {
+            selectElement.value = currentSelection;
+        } else {
+            selectElement.value = ""; // Select placeholder
+        }
+    }
+
+    // --- Dynamic Dropdown Logic ---
+
+    // Called when a Pen is selected
+    function handlePenSelection(penSelectElement) {
+        const selectedPenId = penSelectElement.value;
+        const row = penSelectElement.closest('.sale-item-row');
+        const typeSelectElement = row.querySelector('.item-pig-type-select');
+        
+        console.log(`Pen selected: ${selectedPenId}. Populating types for dropdown:`, typeSelectElement);
+        populateTypeDropdown(typeSelectElement, selectedPenId);
+
+        // Also update the hidden pen name input
+        const penNameInput = row.querySelector('.item-pen-name');
+        penNameInput.value = selectedPenId ? penSelectElement.options[penSelectElement.selectedIndex].text : '';
+
+        updateTotals(); // Recalculate totals when pen changes (might affect type/price later)
+    }
+
+    // Populates the Type dropdown based on pigs available in the selected pen
+    function populateTypeDropdown(typeSelectElement, penId) {
+        if (!typeSelectElement) return;
+        typeSelectElement.innerHTML = ''; // Clear existing options
+
+        // Add placeholder
+        const placeholderOption = document.createElement('option');
+        placeholderOption.value = "";
+        placeholderOption.textContent = "-- Select Type --";
+        placeholderOption.disabled = true;
+        placeholderOption.selected = true;
+        typeSelectElement.appendChild(placeholderOption);
+
+        if (!penId) {
+            placeholderOption.textContent = "-- Select Pen First --";
+            return; // No pen selected
+        }
+
+        const pigs = getPigsFromStorage();
+        // Filter pigs in the selected pen (Assuming pigs have penId and type properties)
+        // Also filter out pigs marked as sold/removed if applicable (e.g., !pig.isSold)
+        const pigsInPen = pigs.filter(pig => pig.penId === penId /* && !pig.isSold */);
+        
+        const availableTypes = [...new Set(pigsInPen.map(pig => pig.type || 'Unknown'))]; // Get unique types
+        availableTypes.sort();
+
+        console.log(`Available types in pen ${penId}:`, availableTypes);
+
+        if (availableTypes.length === 0) {
+             placeholderOption.textContent = "-- No Pigs in Pen --";
+             return;
+        }
+
+        availableTypes.forEach(type => {
+            const option = document.createElement('option');
+            option.value = type;
+            option.textContent = type;
+            typeSelectElement.appendChild(option);
+        });
+
+        // Add the "Other" option separately if needed
+        const otherOption = document.createElement('option');
+        otherOption.value = "Other";
+        otherOption.textContent = "Other (Specify Below)";
+        typeSelectElement.appendChild(otherOption);
+
+        // Reset the 'Other' input visibility
+        updateItemDescription(typeSelectElement); 
+    }
+
+    // --- Initial Load & Setup ---
+    document.addEventListener('DOMContentLoaded', () => {
+        // Set default date to today
+        const today = new Date().toISOString().split('T')[0];
+        saleDateInput.value = today;
+
+        // Initial calculation and listener setup for the first item row
+        updateTotals();
+
+        // Render history & populate customer dropdown
+        renderSalesHistory();
+        populateCustomerDropdown();
+        // Populate the pen dropdown for the initial row
+        const initialPenSelect = saleItemsContainer.querySelector('.item-pen-select');
+        populatePenDropdown(initialPenSelect);
+    });
+
+</script>
+
+</body>
+</html>

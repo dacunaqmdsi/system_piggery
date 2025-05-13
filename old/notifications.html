@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Notifications - Piggery Farm MS</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        /* Consistent UI Styles */
+        .notification-item {
+            background-color: white;
+            padding: 1rem 1.5rem;
+            border-radius: 0.5rem;
+            box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+            border-left: 4px solid;
+        }
+        .notification-item.info { border-left-color: #3b82f6; /* blue-500 */ }
+        .notification-item.warning { border-left-color: #f59e0b; /* amber-500 */ }
+        .notification-item.success { border-left-color: #10b981; /* emerald-500 */ }
+        .notification-item.error { border-left-color: #ef4444; /* red-500 */ }
+
+        .notification-icon {
+            margin-right: 1rem;
+            font-size: 1.5rem;
+        }
+        .notification-icon.info { color: #3b82f6; }
+        .notification-icon.warning { color: #f59e0b; }
+        .notification-icon.success { color: #10b981; }
+        .notification-icon.error { color: #ef4444; }
+
+        .notification-content p { margin: 0; }
+        .notification-content .title { font-weight: 600; color: #1f2937; margin-bottom: 0.25rem; }
+        .notification-content .message { color: #4b5563; font-size: 0.9em; }
+        .notification-content .timestamp { font-size: 0.75em; color: #6b7280; margin-top: 0.5rem; }
+
+        .btn-primary { background: linear-gradient(135deg, #e546b5 0%, #e546b5 100%); color: white; transition: all 0.2s ease; }
+        .btn-primary:hover { background: linear-gradient(135deg, #e546b5 0%, #e546b5 100%); transform: translateY(-1px); box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+
+    </style>
+</head>
+<body class="bg-gray-100 p-6">
+
+    <div class="flex justify-between items-center mb-6">
+         <h1 class="text-3xl font-bold text-gray-800">Notifications</h1>
+         <button onclick="clearAllNotifications()" class="btn-primary px-4 py-2 rounded-lg font-semibold text-sm">
+             <i class="fas fa-broom mr-1"></i> Clear All (Placeholder)
+         </button>
+    </div>
+
+    <div id="notifications-list" class="space-y-4">
+        <!-- Notifications will be loaded here -->
+        <p id="no-notifications-message" class="text-center text-gray-500 py-6 bg-white rounded-lg shadow">No new notifications.</p>
+    </div>
+
+<script>
+    const notificationsList = document.getElementById('notifications-list');
+    const noNotificationsMessage = document.getElementById('no-notifications-message');
+    const NOTIFICATIONS_STORAGE_KEY = 'farmNotifications'; // Future use
+
+    // --- Placeholder Data ---
+    const placeholderNotifications = [
+        {
+            id: 'n1', type: 'warning', title: 'Low Feed Stock',
+            message: 'Feed quantity for Fatteners is below 50kg.',
+            timestamp: '2023-11-15 08:30 AM'
+        },
+        {
+            id: 'n2', type: 'info', title: 'Vaccination Reminder',
+            message: 'Sow Pen S2 is due for vaccination next week.',
+            timestamp: '2023-11-14 10:00 AM'
+        },
+        {
+             id: 'n3', type: 'success', title: 'New Birth Recorded',
+             message: 'A new birth record was added for Sow Pen S1 (10 alive).',
+             timestamp: '2023-11-13 02:15 PM'
+        },
+        {
+             id: 'n4', type: 'info', title: 'System Update',
+             message: 'Welcome to the updated Piggery Farm Management System!',
+             timestamp: '2023-11-10 09:00 AM'
+        }
+    ];
+
+    // --- Rendering Functions ---
+    function renderNotifications() {
+        // In a real app, load from storage or server
+        // const notifications = getNotificationsFromStorage(); 
+        const notifications = placeholderNotifications; // Using placeholders for now
+
+        notificationsList.innerHTML = ''; // Clear existing
+
+        if (notifications.length === 0) {
+            notificationsList.appendChild(noNotificationsMessage); // Show the 'no notifications' message
+            noNotificationsMessage.classList.remove('hidden');
+        } else {
+            noNotificationsMessage.classList.add('hidden'); // Hide the message if there are notifications
+            notifications.forEach(notification => {
+                const item = createNotificationElement(notification);
+                notificationsList.appendChild(item);
+            });
+        }
+    }
+
+    function createNotificationElement(notification) {
+        const div = document.createElement('div');
+        div.classList.add('notification-item', notification.type);
+        div.setAttribute('data-id', notification.id);
+
+        let iconClass = 'fas fa-info-circle'; // Default icon
+        switch (notification.type) {
+            case 'warning': iconClass = 'fas fa-exclamation-triangle'; break;
+            case 'success': iconClass = 'fas fa-check-circle'; break;
+            case 'error': iconClass = 'fas fa-times-circle'; break;
+            case 'info': // Keep default
+        }
+
+        div.innerHTML = `
+            <div class="notification-icon ${notification.type}">
+                <i class="${iconClass}"></i>
+            </div>
+            <div class="notification-content flex-grow">
+                <p class="title">${notification.title}</p>
+                <p class="message">${notification.message}</p>
+                <p class="timestamp">${notification.timestamp}</p>
+            </div>
+            <button onclick="dismissNotification('${notification.id}')" class="text-gray-400 hover:text-gray-600 ml-4 text-lg" title="Dismiss">
+                <i class="fas fa-times"></i>
+            </button>
+        `;
+        return div;
+    }
+
+    // --- Actions (Placeholders for now) ---
+    function dismissNotification(notificationId) {
+        // In a real app, remove from storage/backend
+        const element = notificationsList.querySelector(`.notification-item[data-id="${notificationId}"]`);
+        if (element) {
+            element.remove();
+             console.log(`Placeholder: Dismissed notification ${notificationId}`);
+             // If list becomes empty, show the placeholder message
+             if (notificationsList.children.length === 0) {
+                  notificationsList.appendChild(noNotificationsMessage);
+                  noNotificationsMessage.classList.remove('hidden');
+             }
+        }
+    }
+
+    function clearAllNotifications() {
+        // In a real app, clear from storage/backend
+        if (confirm("Are you sure you want to clear all notifications? (This is a placeholder action)")) {
+            notificationsList.innerHTML = ''; // Clear visually
+            notificationsList.appendChild(noNotificationsMessage);
+            noNotificationsMessage.classList.remove('hidden');
+             console.log("Placeholder: Cleared all notifications");
+        }
+    }
+
+    // --- Initial Load ---
+    document.addEventListener('DOMContentLoaded', renderNotifications);
+
+</script>
+
+</body>
+</html>

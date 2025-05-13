@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Reports - Piggery Farm Management System</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        /* Match button color to main theme */
+        .btn-theme {
+            background-color: #4f46e5; /* Indigo */
+            color: white;
+        }
+        .btn-theme:hover {
+            background-color: #4338ca;
+        }
+        /* Consistent card/table titles */
+        .report-title {
+            color: #1f2937; /* Dark gray */
+            font-weight: 600;
+            margin-bottom: 1rem;
+            font-size: 1.125rem; /* text-lg */
+        }
+        /* Style for summary cards */
+        .summary-card {
+            background-color: #fff;
+            border-radius: 0.5rem; /* rounded-lg */
+            padding: 1.5rem; /* p-6 */
+            box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06); /* shadow */
+        }
+        .summary-value {
+            font-size: 1.875rem; /* text-3xl */
+            font-weight: 700; /* font-bold */
+            color: #111827; /* gray-900 */
+        }
+        .summary-label {
+            font-size: 0.875rem; /* text-sm */
+            color: #6b7280; /* gray-500 */
+            margin-top: 0.25rem; /* mt-1 */
+        }
+    </style>
+</head>
+<body class="bg-gray-100 h-full">
+    <div class="flex-1 h-full flex flex-col">
+        <header class="bg-white shadow-sm flex-shrink-0">
+            <div class="flex flex-wrap items-center justify-between px-8 py-4 gap-4">
+                <h2 class="text-2xl font-semibold text-gray-800">Reports</h2>
+                <div class="flex space-x-4">
+                    <select id="reportType" class="border border-gray-300 rounded-lg px-4 py-2 focus:ring-indigo-500 focus:border-indigo-500">
+                        <option value="monthly">Monthly Report</option>
+                        <option value="quarterly">Quarterly Report</option>
+                        <option value="yearly">Yearly Report</option>
+                    </select>
+                    <button onclick="generateReport()" class="btn-theme px-4 py-2 rounded-lg transition-colors">
+                        <i class="fas fa-download mr-2"></i>Generate Report
+                    </button>
+                </div>
+            </div>
+        </header>
+
+        <main class="flex-1 p-8 overflow-y-auto">
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                <!-- Sales Overview -->
+                <div class="summary-card">
+                    <h3 class="report-title">Sales Overview (Sample)</h3>
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <p class="summary-value">₱75,000</p>
+                            <p class="summary-label">Total Sales (Period)</p>
+                        </div>
+                        <div>
+                            <p class="summary-value">₱12,500</p>
+                            <p class="summary-label">Average Sale Value</p>
+                        </div>
+                        <div>
+                            <p class="summary-value">6</p>
+                            <p class="summary-label">Number of Sales</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Expenses Breakdown -->
+                <div class="summary-card">
+                    <h3 class="report-title">Expenses Breakdown (Sample)</h3>
+                    <div class="overflow-x-auto">
+                        <table class="min-w-full text-sm">
+                            <thead class="text-left">
+                                <tr>
+                                    <th class="py-2 font-medium text-gray-500">Category</th>
+                                    <th class="py-2 font-medium text-gray-500 text-right">Amount (₱)</th>
+                                    <th class="py-2 font-medium text-gray-500 text-right">Percentage</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-gray-200">
+                                <tr><td class="py-2">Feed</td><td class="py-2 text-right">45,000</td><td class="py-2 text-right">45%</td></tr>
+                                <tr><td class="py-2">Medicine</td><td class="py-2 text-right">20,000</td><td class="py-2 text-right">20%</td></tr>
+                                <tr><td class="py-2">Labor</td><td class="py-2 text-right">15,000</td><td class="py-2 text-right">15%</td></tr>
+                                <tr><td class="py-2">Utilities</td><td class="py-2 text-right">10,000</td><td class="py-2 text-right">10%</td></tr>
+                                <tr><td class="py-2">Maintenance</td><td class="py-2 text-right">10,000</td><td class="py-2 text-right">10%</td></tr>
+                            </tbody>
+                             <tfoot class="border-t-2 border-gray-300">
+                                <tr>
+                                    <td class="py-2 font-semibold">Total</td>
+                                    <td class="py-2 text-right font-semibold">100,000</td>
+                                    <td class="py-2 text-right font-semibold">100%</td>
+                                </tr>
+                            </tfoot>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Inventory Status -->
+                <div class="summary-card">
+                    <h3 class="report-title">Inventory Status (Sample)</h3>
+                    <div class="overflow-x-auto">
+                        <table class="min-w-full text-sm">
+                            <thead class="text-left">
+                                <tr>
+                                    <th class="py-2 font-medium text-gray-500">Category</th>
+                                    <th class="py-2 font-medium text-gray-500 text-right">Count</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-gray-200">
+                                <tr><td class="py-2">Sows</td><td class="py-2 text-right">30</td></tr>
+                                <tr><td class="py-2">Boars</td><td class="py-2 text-right">5</td></tr>
+                                <tr><td class="py-2">Piglets</td><td class="py-2 text-right">120</td></tr>
+                                <tr><td class="py-2">Growers</td><td class="py-2 text-right">80</td></tr>
+                                <tr><td class="py-2">Fatteners</td><td class="py-2 text-right">60</td></tr>
+                            </tbody>
+                            <tfoot class="border-t-2 border-gray-300">
+                                <tr>
+                                    <td class="py-2 font-semibold">Total Pigs</td>
+                                    <td class="py-2 text-right font-semibold">295</td>
+                                </tr>
+                            </tfoot>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Health Statistics -->
+                 <div class="summary-card">
+                    <h3 class="report-title">Health Statistics (Sample)</h3>
+                    <div class="grid grid-cols-3 gap-4 text-center">
+                        <div>
+                            <p class="summary-value text-green-600">85%</p>
+                            <p class="summary-label">Healthy</p>
+                        </div>
+                        <div>
+                            <p class="summary-value text-yellow-600">12%</p>
+                            <p class="summary-label">Under Treatment</p>
+                        </div>
+                        <div>
+                            <p class="summary-value text-red-600">3%</p>
+                            <p class="summary-label">Critical</p>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </main>
+    </div>
+
+    <script>
+        function generateReport() {
+            const reportType = document.getElementById('reportType').value;
+            // Here you would typically fetch data based on reportType and update the summary cards/tables
+            // For now, it just shows an alert.
+            alert(`Generating ${reportType} report (placeholder)... Sample data shown.`);
+            console.log(`Report Type Selected: ${reportType}`);
+            // Add logic here later to fetch real data and update the DOM elements above.
+        }
+
+        // No chart initialization needed on DOMContentLoaded anymore
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log("Reports page loaded. Displaying sample static data.");
+        });
+    </script>
+</body>
+</html>

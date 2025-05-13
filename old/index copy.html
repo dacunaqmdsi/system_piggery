@@ -1,0 +1,323 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dimayacyac's Piggery Farm Management System</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/aja x/libs/font-awesome/6.0.0/css/all.min.css">
+    <!-- Chart.js is optional if not used directly in index.html -->
+    <!-- <script src="https://cdn.jsdelivr.net/npm/chart.js"></script> -->
+    <style>
+        @keyframes spin-slow {
+            from {
+                transform: rotate(0deg);
+            }
+
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        .animate-spin-slow {
+            animation: spin-slow 3s linear infinite;
+        }
+
+        .transform {
+            transition: all 0.3s ease;
+        }
+
+        .hover\:scale-110:hover {
+            transform: scale(1.1);
+        }
+
+        .hover\:-translate-y-1:hover {
+            transform: translateY(-4px);
+        }
+
+        /* Ensure iframe takes full height */
+        html,
+        body,
+        #app-container,
+        .flex-1 {
+            height: 100%;
+        }
+
+        body {
+            margin: 0;
+        }
+
+        /* Reset default body margin */
+
+        /* Sidebar Styles */
+        .sidebar {
+            background: linear-gradient(180deg, #e546ad 0%, #e546ad 100%);
+            color: #e0e7ff;
+            box-shadow: 2px 0 5px rgba(0, 0, 0, 0.1);
+            transition: width 0.3s ease;
+        }
+
+        .sidebar a {
+            transition: background-color 0.2s ease, color 0.2s ease, padding-left 0.2s ease;
+            border-left: 4px solid transparent;
+        }
+
+        .sidebar a:hover {
+            background-color: rgba(255, 255, 255, 0.1);
+            color: white;
+            border-left-color: #e546ad;
+        }
+
+        .sidebar a.active {
+            background-color: rgba(255, 255, 255, 0.2);
+            color: white;
+            font-weight: 600;
+            border-left-color: white;
+        }
+
+        .sidebar-header {
+            border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .user-info {
+            border-top: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .logout-btn {
+            background-color: rgba(255, 255, 255, 0.1);
+            transition: background-color 0.2s ease;
+        }
+
+        .logout-btn:hover {
+            background-color: rgba(255, 255, 255, 0.2);
+        }
+
+        /* Enhanced UI Styles */
+        .auth-container {
+            background: linear-gradient(135deg, #fcf6fc 0%, #e9f0f7 100%);
+        }
+
+        .auth-card {
+            background: white;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            border-radius: 1rem;
+            transition: transform 0.2s ease-in-out;
+        }
+
+        .auth-card:hover {
+            transform: translateY(-2px);
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #e546b5 0%, #e546b5 100%);
+            transition: all 0.2s ease;
+        }
+
+        .btn-primary:hover {
+            background: linear-gradient(135deg, #e546b5 0%, #e546b5 100%);
+            transform: translateY(-1px);
+        }
+
+        .btn-secondary {
+            background: #f3f4f6;
+            color: #e54698;
+            transition: all 0.2s ease;
+        }
+
+        .btn-secondary:hover {
+            background: #e5e7eb;
+            transform: translateY(-1px);
+        }
+
+        .input-field {
+            border: 2px solid #e5e7eb;
+            transition: all 0.2s ease;
+        }
+
+        .input-field:focus {
+            border-color: #e546b5;
+            box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
+        }
+
+        .select-field {
+            border: 2px solid #e5e7eb;
+            transition: all 0.2s ease;
+        }
+
+        .select-field:focus {
+            border-color: #e546b5;
+            box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
+        }
+    </style>
+</head>
+
+<body class="auth-container h-full">
+    <!-- Step 1: Account Type Selection -->
+    <div id="account-type-screen" class="min-h-screen flex justify-center items-center">
+        <div class="auth-card p-8 w-96 text-center">
+            <div class="mb-6">
+                <img src="logo.png-removebg-preview.png" alt="Farm Logo" class="w-30 h-auto mx-auto mb-5">
+                <h2 class="text-2xl font-bold text-gray-800 mb-2"> Dimayacyac's Piggery Farm System Management</h2>
+                <p class="text-gray-600">Please select your account type</p>
+            </div>
+            <select id="account-type-select" class="select-field w-full p-3 mb-4 rounded-lg focus:outline-none">
+                <option selected disabled value="">Choose account type</option>
+                <option value="Farm Owner">Farm Owner</option>
+                <option value="Care Taker">Care Taker</option>
+            </select>
+            <button onclick="proceedToLogin()"
+                class="btn-primary text-white px-4 py-2 rounded-lg w-full font-semibold mb-2">Continue</button>
+            <p id="account-type-error" class="text-red-500 hidden mt-2 text-sm">Please select an account type.</p>
+        </div>
+    </div>
+
+    <!-- Step 2: Login Form -->
+    <div id="login-screen" class="min-h-screen flex justify-center items-center hidden">
+        <div class="auth-card p-8 w-96 text-center">
+            <div class="mb-6">
+                <i class="fas fa-user-circle text-4xl text-indigo-600 mb-4"></i>
+                <h2 class="text-2xl font-bold text-gray-800 mb-2"></h2>
+                <p class="text-gray-600 mb-4" id="login-subtext">Sign in to manage your piggery</p>
+            </div>
+            <div class="text-left space-y-4">
+                <div>
+                    <label class="block text-gray-700 font-medium mb-1">Username</label>
+                    <input id="login-username" type="text" placeholder="Enter your username"
+                        class="input-field w-full p-3 rounded-lg focus:outline-none">
+                </div>
+                <div>
+                    <label class="block text-gray-700 font-medium mb-1">Password</label>
+                    <input id="login-password" type="password" placeholder="Enter your password"
+                        class="input-field w-full p-3 rounded-lg focus:outline-none">
+                </div>
+                <button onclick="login()"
+                    class="btn-primary text-white px-4 py-2 rounded-lg w-full font-semibold mb-2">Log In</button>
+                <button id="signup-btn" onclick="showSignupScreen()"
+                    class="btn-secondary px-4 py-2 rounded-lg w-full font-semibold hidden">Sign Up</button>
+                <p id="login-error" class="text-red-500 hidden mt-2 text-sm">Please enter valid credentials.</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Step 3: Signup Form -->
+    <div id="signup-screen" class="min-h-screen flex justify-center items-center hidden">
+        <div class="auth-card p-8 w-96 text-center">
+            <div class="mb-6">
+                <i class="fas fa-user-plus text-4xl text-indigo-600 mb-4"></i>
+                <h2 class="text-2xl font-bold text-gray-800 mb-2">Create Account</h2>
+                <p class="text-gray-600 mb-4">Create a new Farm account</p>
+            </div>
+            <div class="text-left space-y-4">
+                <div>
+                    <label class="block text-gray-700 font-medium mb-1">Username</label>
+                    <input id="signup-username" type="text" placeholder="Choose a username"
+                        class="input-field w-full p-3 rounded-lg focus:outline-none">
+                </div>
+                <div>
+                    <label class="block text-gray-700 font-medium mb-1">Password</label>
+                    <input id="signup-password" type="password" placeholder="Choose a password"
+                        class="input-field w-full p-3 rounded-lg focus:outline-none">
+                </div>
+                <div>
+                    <label class="block text-gray-700 font-medium mb-1">Confirm Password</label>
+                    <input id="signup-confirm-password" type="password" placeholder="Confirm your password"
+                        class="input-field w-full p-3 rounded-lg focus:outline-none">
+                </div>
+                <div>
+                    <label class="block text-gray-700 font-medium mb-1">Account Type</label>
+                    <select id="signup-account-type" class="select-field w-full p-3 rounded-lg focus:outline-none">
+                        <option selected disabled value="">Choose account type</option>
+                        <option value="Farm Owner">Farm Owner</option>
+                        <option value="Care Taker">Care Taker</option>
+                    </select>
+                </div>
+                <button onclick="signup()"
+                    class="btn-primary text-white px-4 py-2 rounded-lg w-full font-semibold mb-2">Sign Up</button>
+                <button onclick="showLoginScreen()" class="btn-secondary px-4 py-2 rounded-lg w-full font-semibold">Back
+                    to Login</button>
+                <p id="signup-error" class="text-red-500 hidden mt-2 text-sm"></p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Application Container -->
+    <div id="app-container" class="h-full flex hidden">
+        <!-- Sidebar Restored -->
+        <aside id="sidebar" class="sidebar w-64 flex flex-col space-y-2 p-4">
+            <div class="sidebar-header pb-4 mb-4 text-center">
+                <h1 class="text-xl font-semibold text-white"> Dimayacyac's Piggery Farm MS</h1>
+            </div>
+            <div class="text-center mt-5">
+                <img src="C:\Users\HEART TO HEART\Desktop\ITE5\SYSTEM SAD\CHECKED UII\logo.png-removebg-preview.png"
+                    alt="Website Logo" class="w-20 h-auto inline-block">
+            </div>
+            <nav class="flex-grow">
+                <a href="#" onclick="loadModule('dashboard.html', this); return false;"
+                    class="flex items-center space-x-2 p-2 rounded-md hover:bg-opacity-20">
+                    <i class="fas fa-tachometer-alt w-5 text-center"></i><span>Dashboard</span>
+                </a>
+                <a href="#" onclick="loadModule('inventory.html', this); return false;"
+                    class="flex items-center space-x-2 p-2 rounded-md hover:bg-opacity-20">
+                    <i class="fas fa-boxes w-5 text-center"></i><span>Pig Inventory</span>
+                </a>
+                <a href="#" onclick="loadModule('products.html', this); return false;"
+                    class="flex items-center space-x-2 p-2 rounded-md hover:bg-opacity-20">
+                    <i class="fas fa-shopping-basket w-5 text-center"></i><span>Products</span>
+                </a>
+                <a href="#" onclick="loadModule('sales.html', this); return false;"
+                    class="flex items-center space-x-2 p-2 rounded-md hover:bg-opacity-20">
+                    <i class="fas fa-dollar-sign w-5 text-center"></i><span>Sales</span>
+                </a>
+                <a href="#" onclick="loadModule('expenses.html', this); return false;"
+                    class="flex items-center space-x-2 p-2 rounded-md hover:bg-opacity-20">
+                    <i class="fas fa-receipt w-5 text-center"></i><span>Expenses</span>
+                </a>
+                <a href="#" onclick="loadModule('monitoring.html', this); return false;"
+                    class="flex items-center space-x-2 p-2 rounded-md hover:bg-opacity-20">
+                    <i class="fas fa-clipboard-list w-5 text-center"></i><span>Daily Monitoring</span>
+                </a>
+                <a href="#" onclick="loadModule('reports.html', this); return false;"
+                    class="flex items-center space-x-2 p-2 rounded-md hover:bg-opacity-20">
+                    <i class="fas fa-chart-bar w-5 text-center"></i><span>Reports</span>
+                </a>
+                <a href="#" onclick="loadModule('notifications.html', this); return false;"
+                    class="flex items-center space-x-2 p-2 rounded-md hover:bg-opacity-20">
+                    <i class="fas fa-bell w-5 text-center"></i><span>Notifications</span>
+                </a>
+                <a href="#" onclick="loadModule('user_management.html'); return false;"
+                    class="flex items-center space-x-2 p-2 rounded-md hover:bg-opacity-20">
+                    <i class="fas fa-users-cog w-5 text-center"></i><span>User Management</span>
+                </a>
+                <a href="#" onclick="loadModule('customers.html'); return false;"
+                    class="flex items-center space-x-2 p-2 rounded-md hover:bg-opacity-20">
+                    <i class="fas fa-address-book w-5 text-center"></i><span>Customers</span>
+                </a>
+            </nav>
+            <div class="user-info pt-4 mt-auto">
+                <div class="flex items-center space-x-3 mb-3">
+                    <i class="fas fa-user-circle text-3xl text-white"></i>
+                    <div>
+                        <p id="user-name" class="font-semibold text-white">User Name</p>
+                        <p id="user-role" class="text-sm text-indigo-200">User Role</p>
+                    </div>
+                </div>
+                <button onclick="logout()"
+                    class="logout-btn w-full text-left text-white p-2 rounded-md flex items-center space-x-2">
+                    <i class="fas fa-sign-out-alt w-5 text-center"></i><span>Logout</span>
+                </button>
+            </div>
+        </aside>
+
+        <!-- Main Content Area -->
+        <div class="flex-1 overflow-hidden bg-gray-100">
+            <iframe id="content-frame" class="w-full h-full border-none" frameborder="0"></iframe>
+        </div>
+    </div>
+
+    <!-- Create Care Taker Modal Removed -->
+
+    <script src="script.js"></script>
+</body>
+
+</html>

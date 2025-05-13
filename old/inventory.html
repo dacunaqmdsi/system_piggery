@@ -1,0 +1,626 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pig Inventory & Birthing Records - Piggery Farm MS</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        /* Consistent Button/Input Styles from index.html */
+        .btn-primary { background: linear-gradient(135deg, #e546b5 0%, #e546b5 100%); color: white; transition: all 0.2s ease; }
+        .btn-primary:hover { background: linear-gradient(135deg, #e546b5 0%, #e546b5 100%); transform: translateY(-1px); box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        .btn-secondary { background: #f3f4f6; color: #e54698; transition: all 0.2s ease; }
+        .btn-secondary:hover { background: #e5e7eb; transform: translateY(-1px); box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        .btn-danger { background-color: #ef4444; color: white; transition: all 0.2s ease; }
+        .btn-danger:hover { background-color: #dc2626; transform: translateY(-1px); box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        .input-field { border: 2px solid #e5e7eb; transition: all 0.2s ease; padding: 0.75rem; border-radius: 0.5rem; width: 100%; }
+        .input-field:focus { border-color: #e546b5; box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1); outline: none; }
+        .select-field { border: 2px solid #e5e7eb; transition: all 0.2s ease; padding: 0.75rem; border-radius: 0.5rem; width: 100%; background-color: white; }
+        .select-field:focus { border-color: #e546b5; box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1); outline: none; }
+        .modal-backdrop { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0, 0, 0, 0.5); display: flex; justify-content: center; align-items: center; z-index: 50; }
+        .modal-content { background: white; padding: 2rem; border-radius: 0.5rem; box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05); width: 90%; max-width: 500px; }
+        .card { background-color: white; border-radius: 0.5rem; box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06); padding: 1rem; }
+        .table-container { background-color: white; padding: 1.5rem; border-radius: 0.5rem; box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06); }
+        th { background-color: #f9fafb; color: #374151; font-weight: 600; text-align: left; padding: 0.75rem 1rem; }
+        td { padding: 0.75rem 1rem; border-bottom: 1px solid #e5e7eb; color: #1f2937; }
+        tbody tr:last-child td { border-bottom: none; }
+    </style>
+</head>
+<body class="bg-gray-100 p-6">
+
+    <div class="flex justify-between items-center mb-6">
+        <h1 class="text-3xl font-bold text-gray-800">Pig Pen Inventory</h1>
+        <div class="space-x-3">
+            <button onclick="openAddPenModal()" class="btn-primary px-4 py-2 rounded-lg font-semibold flex items-center space-x-2">
+                <i class="fas fa-plus"></i><span>Add Pen</span>
+            </button>
+            <button onclick="openRecordBirthModal()" class="btn-primary px-4 py-2 rounded-lg font-semibold flex items-center space-x-2">
+                <i class="fas fa-baby"></i><span>Record Birth</span>
+            </button>
+        </div>
+    </div>
+
+    <!-- Pen Inventory Display -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+
+        <!-- Sow Pens Table -->
+        <div class="table-container overflow-x-auto">
+            <h2 class="text-xl font-semibold text-gray-700 mb-3">Sow Pens (<span id="total-sows" class="font-bold">0</span>)</h2>
+            <table class="min-w-full divide-y divide-gray-200">
+                <thead><tr><th>Pen Number</th><th>Count</th></tr></thead>
+                <tbody id="sow-table-body" class="bg-white divide-y divide-gray-200">
+                    <tr><td colspan="2" class="text-center text-gray-500 py-4">No sow pens added yet.</td></tr>
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Boar Pens Table -->
+        <div class="table-container overflow-x-auto">
+             <h2 class="text-xl font-semibold text-gray-700 mb-3">Boar Pens (<span id="total-boars" class="font-bold">0</span>)</h2>
+             <table class="min-w-full divide-y divide-gray-200">
+                 <thead><tr><th>Pen Number</th><th>Count</th></tr></thead>
+                 <tbody id="boar-table-body" class="bg-white divide-y divide-gray-200">
+                     <tr><td colspan="2" class="text-center text-gray-500 py-4">No boar pens added yet.</td></tr>
+                 </tbody>
+             </table>
+        </div>
+
+        <!-- Fattener Pens Table -->
+         <div class="table-container overflow-x-auto">
+              <h2 class="text-xl font-semibold text-gray-700 mb-3">Fattener Pens (<span id="total-fatteners" class="font-bold">0</span>)</h2>
+              <table class="min-w-full divide-y divide-gray-200">
+                  <thead><tr><th>Pen Number</th><th>Count</th></tr></thead>
+                  <tbody id="fattener-table-body" class="bg-white divide-y divide-gray-200">
+                      <tr><td colspan="2" class="text-center text-gray-500 py-4">No fattener pens added yet.</td></tr>
+                  </tbody>
+              </table>
+         </div>
+
+         <!-- Piglet Pens Table -->
+          <div class="table-container overflow-x-auto">
+               <h2 class="text-xl font-semibold text-gray-700 mb-3">Piglet Pens (<span id="total-piglets" class="font-bold">0</span>)</h2>
+               <table class="min-w-full divide-y divide-gray-200">
+                   <thead><tr><th>Pen Number</th><th>Mother Sow</th><th>Count</th></tr></thead>
+                   <tbody id="piglet-table-body" class="bg-white divide-y divide-gray-200">
+                       <tr><td colspan="3" class="text-center text-gray-500 py-4">No piglet pens added yet.</td></tr>
+                   </tbody>
+               </table>
+          </div>
+
+    </div>
+
+    <!-- Birthing Records -->
+    <div>
+        <h2 class="text-2xl font-bold text-gray-800 mb-4">Birthing Records</h2>
+        <div class="table-container overflow-x-auto">
+            <table class="min-w-full divide-y divide-gray-200">
+                <thead>
+                    <tr>
+                        <th>Date of Birth</th>
+                        <th>Mother Sow (Pen#)</th>
+                        <th>Total Born</th>
+                        <th>Deaths</th>
+                        <th>Alive</th>
+                    </tr>
+                </thead>
+                <tbody id="birthing-records-body" class="bg-white divide-y divide-gray-200">
+                    <!-- Birthing records will be populated here -->
+                     <tr><td colspan="6" class="text-center text-gray-500 py-4">No birthing records found.</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+
+    <!-- Add Pen Modal -->
+    <div id="add-pen-modal" class="modal-backdrop hidden">
+        <div class="modal-content">
+            <h2 class="text-2xl font-bold text-gray-800 mb-6">Add New Pen</h2>
+            <form id="add-pen-form" onsubmit="handleAddPenSubmit(event)">
+                <div class="space-y-4">
+                    <div>
+                        <label for="pen-number" class="block text-gray-700 font-medium mb-1">Pen Number</label>
+                        <input id="pen-number" type="text" placeholder="e.g., S1, B2, F10, P1-Litter" class="input-field" required>
+                         <p class="text-xs text-gray-500 mt-1">Use a unique identifier for the pen.</p>
+                    </div>
+                    <div>
+                        <label for="pen-type" class="block text-gray-700 font-medium mb-1">Pen Type</label>
+                        <select id="pen-type" class="select-field" required>
+                            <option value="" disabled selected>Select pen type</option>
+                            <option value="Sow">Sow</option>
+                            <option value="Boar">Boar</option>
+                            <option value="Fattener">Fattener</option>
+                            <option value="Piglet">Piglet</option>
+                        </select>
+                    </div>
+                     <div id="piglet-options" class="hidden space-y-4">
+                         <div>
+                             <label for="mother-sow-pen" class="block text-gray-700 font-medium mb-1">Mother Sow Pen</label>
+                             <select id="mother-sow-pen" class="select-field">
+                                 <option value="" disabled selected>Select mother sow's pen</option>
+                                 <!-- Sow pens will be populated here -->
+                             </select>
+                             <p class="text-xs text-gray-500 mt-1">Required if Pen Type is Piglet.</p>
+                         </div>
+                         <div>
+                             <label for="piglet-count" class="block text-gray-700 font-medium mb-1">Number of Piglets</label>
+                             <input id="piglet-count" type="number" min="0" placeholder="Enter count" class="input-field">
+                         </div>
+                     </div>
+                     <div id="sow-boar-fattener-options" class="hidden space-y-4">
+                         <div>
+                            <label for="animal-count" class="block text-gray-700 font-medium mb-1">Number of Animals</label>
+                            <input id="animal-count" type="number" min="0" value="1" placeholder="Enter count" class="input-field">
+                            <p class="text-xs text-gray-500 mt-1">Typically 1 for Sow/Boar, multiple for Fatteners.</p>
+                        </div>
+                     </div>
+                </div>
+                <p id="add-pen-modal-error" class="text-red-500 hidden mt-4 text-sm"></p>
+                <div class="mt-6 flex justify-end space-x-3">
+                    <button type="button" onclick="closeAddPenModal()" class="btn-secondary px-4 py-2 rounded-lg font-semibold">Cancel</button>
+                    <button type="submit" class="btn-primary px-4 py-2 rounded-lg font-semibold">Add Pen</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Record Birth Modal -->
+    <div id="record-birth-modal" class="modal-backdrop hidden">
+        <div class="modal-content">
+            <h2 class="text-2xl font-bold text-gray-800 mb-6">Record New Birth</h2>
+            <form id="record-birth-form" onsubmit="handleRecordBirthSubmit(event)">
+                <div class="space-y-4">
+                     <div>
+                        <label for="birth-mother-sow-pen" class="block text-gray-700 font-medium mb-1">Mother Sow Pen</label>
+                        <select id="birth-mother-sow-pen" class="select-field" required>
+                            <option value="" disabled selected>Select mother sow's pen</option>
+                            <!-- Sow pens will be populated here -->
+                        </select>
+                    </div>
+                     <div>
+                         <label for="birth-date" class="block text-gray-700 font-medium mb-1">Date of Birth</label>
+                         <input id="birth-date" type="date" class="input-field" required>
+                     </div>
+                     <div>
+                         <label for="birth-total-born" class="block text-gray-700 font-medium mb-1">Total Piglets Born</label>
+                         <input id="birth-total-born" type="number" min="0" placeholder="Enter total count" class="input-field" required>
+                     </div>
+                     <div>
+                         <label for="birth-deaths" class="block text-gray-700 font-medium mb-1">Number of Deaths</label>
+                         <input id="birth-deaths" type="number" min="0" value="0" placeholder="Enter count" class="input-field" required>
+                     </div>
+                     <div>
+                         <label for="birth-alive" class="block text-gray-700 font-medium mb-1">Number Alive</label>
+                         <input id="birth-alive" type="number" min="0" placeholder="Calculated automatically" class="input-field" readonly>
+                     </div>
+                </div>
+                 <p id="record-birth-modal-error" class="text-red-500 hidden mt-4 text-sm"></p>
+                <div class="mt-6 flex justify-end space-x-3">
+                    <button type="button" onclick="closeRecordBirthModal()" class="btn-secondary px-4 py-2 rounded-lg font-semibold">Cancel</button>
+                    <button type="submit" class="btn-primary px-4 py-2 rounded-lg font-semibold">Record Birth</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+
+<script>
+    const sowPensList = document.getElementById('sow-pens-list');
+    const boarPensList = document.getElementById('boar-pens-list');
+    const fattenerPensList = document.getElementById('fattener-pens-list');
+    const pigletPensList = document.getElementById('piglet-pens-list');
+    const birthingRecordsBody = document.getElementById('birthing-records-body');
+
+    const addPenModal = document.getElementById('add-pen-modal');
+    const addPenForm = document.getElementById('add-pen-form');
+    const penNumberInput = document.getElementById('pen-number');
+    const penTypeInput = document.getElementById('pen-type');
+    const pigletOptionsDiv = document.getElementById('piglet-options');
+    const motherSowPenSelect = document.getElementById('mother-sow-pen');
+    const pigletCountInput = document.getElementById('piglet-count');
+    const sowBoarFattenerOptionsDiv = document.getElementById('sow-boar-fattener-options');
+    const animalCountInput = document.getElementById('animal-count');
+    const addPenModalError = document.getElementById('add-pen-modal-error');
+
+    const recordBirthModal = document.getElementById('record-birth-modal');
+    const recordBirthForm = document.getElementById('record-birth-form');
+    const birthMotherSowPenSelect = document.getElementById('birth-mother-sow-pen');
+    const birthDateInput = document.getElementById('birth-date');
+    const birthTotalBornInput = document.getElementById('birth-total-born');
+    const birthDeathsInput = document.getElementById('birth-deaths');
+    const birthAliveInput = document.getElementById('birth-alive');
+    const recordBirthModalError = document.getElementById('record-birth-modal-error');
+
+    const PENS_STORAGE_KEY = 'farmPens';
+    const BIRTHS_STORAGE_KEY = 'farmBirthRecords';
+
+    // --- Data Handling Functions ---
+
+    function getPensFromStorage() {
+        const pensJson = localStorage.getItem(PENS_STORAGE_KEY);
+        try {
+            // Pens stored as an object: { "penNumber": { type: "Sow", count: 1, ... }, ... }
+            return pensJson ? JSON.parse(pensJson) : {};
+        } catch (e) {
+            console.error("Error parsing pens from localStorage:", e);
+            return {};
+        }
+    }
+
+    function savePensToStorage(pens) {
+        try {
+            localStorage.setItem(PENS_STORAGE_KEY, JSON.stringify(pens));
+        } catch (e) {
+            console.error("Error saving pens to localStorage:", e);
+            alert("Could not save pen data. Storage might be full.");
+        }
+    }
+
+    function getBirthsFromStorage() {
+        const birthsJson = localStorage.getItem(BIRTHS_STORAGE_KEY);
+        try {
+             // Birth records stored as an array: [ { id: "...", motherSowPen: "S1", dob: "...", ... }, ... ]
+            return birthsJson ? JSON.parse(birthsJson) : [];
+        } catch (e) {
+            console.error("Error parsing birth records from localStorage:", e);
+            return [];
+        }
+    }
+
+     function saveBirthsToStorage(births) {
+        try {
+            localStorage.setItem(BIRTHS_STORAGE_KEY, JSON.stringify(births));
+        } catch (e) {
+            console.error("Error saving birth records to localStorage:", e);
+            alert("Could not save birth records. Storage might be full.");
+        }
+    }
+
+    // --- Rendering Functions ---
+
+    function renderPens() {
+        const pens = getPensFromStorage();
+
+        const sowTableBody = document.getElementById('sow-table-body');
+        const boarTableBody = document.getElementById('boar-table-body');
+        const fattenerTableBody = document.getElementById('fattener-table-body');
+        const pigletTableBody = document.getElementById('piglet-table-body');
+
+        // Clear existing rows
+        sowTableBody.innerHTML = '';
+        boarTableBody.innerHTML = '';
+        fattenerTableBody.innerHTML = '';
+        pigletTableBody.innerHTML = '';
+
+        let sowCount = 0, boarCount = 0, fattenerCount = 0, pigletCount = 0;
+        let totalSows = 0, totalBoars = 0, totalFatteners = 0, totalPiglets = 0;
+
+        const penEntries = Object.entries(pens);
+
+        penEntries.forEach(([penNumber, penData]) => {
+            const row = document.createElement('tr');
+            const currentPenCount = parseInt(penData.count, 10) || 0;
+            switch (penData.type) {
+                case 'Sow':
+                    row.innerHTML = `<td>${penNumber}</td><td>${penData.count || 0}</td>`;
+                    sowTableBody.appendChild(row);
+                    sowCount++;
+                    totalSows += currentPenCount;
+                    break;
+                case 'Boar':
+                    row.innerHTML = `<td>${penNumber}</td><td>${penData.count || 0}</td>`;
+                    boarTableBody.appendChild(row);
+                    boarCount++;
+                    totalBoars += currentPenCount;
+                    break;
+                case 'Fattener':
+                    row.innerHTML = `<td>${penNumber}</td><td>${penData.count || 0}</td>`;
+                    fattenerTableBody.appendChild(row);
+                    fattenerCount++;
+                    totalFatteners += currentPenCount;
+                    break;
+                case 'Piglet':
+                     row.innerHTML = `<td>${penNumber}</td><td>${penData.motherSowPen || 'N/A'}</td><td>${penData.count || 0}</td>`;
+                     pigletTableBody.appendChild(row);
+                     pigletCount++;
+                     totalPiglets += currentPenCount;
+                     break;
+            }
+        });
+
+        // Add placeholder messages if tables are empty
+        if (sowCount === 0) sowTableBody.innerHTML = '<tr><td colspan="2" class="text-center text-gray-500 py-4">No sow pens added yet.</td></tr>';
+        if (boarCount === 0) boarTableBody.innerHTML = '<tr><td colspan="2" class="text-center text-gray-500 py-4">No boar pens added yet.</td></tr>';
+        if (fattenerCount === 0) fattenerTableBody.innerHTML = '<tr><td colspan="2" class="text-center text-gray-500 py-4">No fattener pens added yet.</td></tr>';
+        if (pigletCount === 0) pigletTableBody.innerHTML = '<tr><td colspan="3" class="text-center text-gray-500 py-4">No piglet pens added yet.</td></tr>';
+
+        // Update total counts display
+        document.getElementById('total-sows').textContent = totalSows;
+        document.getElementById('total-boars').textContent = totalBoars;
+        document.getElementById('total-fatteners').textContent = totalFatteners;
+        document.getElementById('total-piglets').textContent = totalPiglets;
+
+        // Update select options for modals
+        populateSowSelects();
+    }
+
+     function renderBirthingRecords() {
+         const births = getBirthsFromStorage();
+         birthingRecordsBody.innerHTML = ''; // Clear existing
+
+         if (births.length === 0) {
+             birthingRecordsBody.innerHTML = '<tr><td colspan="6" class="text-center text-gray-500 py-4">No birthing records found.</td></tr>';
+             return;
+         }
+
+         // Sort by date descending?
+         births.sort((a, b) => new Date(b.dob) - new Date(a.dob));
+
+         births.forEach(record => {
+             const row = document.createElement('tr');
+             row.innerHTML = `
+                 <td>${record.dob || 'N/A'}</td>
+                 <td>${record.motherSowPen || 'N/A'}</td>
+                 <td>${record.totalBorn || 0}</td>
+                 <td>${record.deaths || 0}</td>
+                 <td>${record.alive || 0}</td>
+                 <td class="text-center">
+                     <button onclick="deleteBirthRecord('${record.id}')" class="text-red-600 hover:text-red-800 transition duration-150 ease-in-out" title="Delete Record">
+                         <i class="fas fa-trash-alt"></i>
+                     </button>
+                     <!-- Add edit button/functionality here if needed -->
+                 </td>
+             `;
+             birthingRecordsBody.appendChild(row);
+         });
+     }
+
+    // --- Modal Handling ---
+
+    function openAddPenModal() {
+        addPenForm.reset();
+        addPenModalError.classList.add('hidden');
+        pigletOptionsDiv.classList.add('hidden');
+        sowBoarFattenerOptionsDiv.classList.add('hidden');
+        populateSowSelects(); // Ensure sow list is up-to-date
+        addPenModal.classList.remove('hidden');
+    }
+
+    function closeAddPenModal() {
+        addPenModal.classList.add('hidden');
+    }
+
+     function openRecordBirthModal() {
+        recordBirthForm.reset();
+        recordBirthModalError.classList.add('hidden');
+        birthAliveInput.value = ''; // Clear calculated field
+        populateSowSelects(); // Ensure sow list is up-to-date
+        recordBirthModal.classList.remove('hidden');
+    }
+
+    function closeRecordBirthModal() {
+        recordBirthModal.classList.add('hidden');
+    }
+
+    function populateSowSelects() {
+        const pens = getPensFromStorage();
+        const sowPens = Object.entries(pens)
+                             .filter(([_, data]) => data.type === 'Sow')
+                             .map(([penNumber, _]) => penNumber);
+
+        // Clear existing options except the placeholder
+        motherSowPenSelect.innerHTML = '<option value="" disabled selected>Select mother sow\'s pen</option>';
+        birthMotherSowPenSelect.innerHTML = '<option value="" disabled selected>Select mother sow\'s pen</option>';
+
+        sowPens.forEach(penNumber => {
+            const option1 = document.createElement('option');
+            option1.value = penNumber;
+            option1.textContent = penNumber;
+            motherSowPenSelect.appendChild(option1);
+
+            const option2 = document.createElement('option');
+            option2.value = penNumber;
+            option2.textContent = penNumber;
+            birthMotherSowPenSelect.appendChild(option2);
+        });
+    }
+
+     // --- Form Submissions ---
+
+    function handleAddPenSubmit(event) {
+        event.preventDefault();
+        addPenModalError.classList.add('hidden');
+
+        const penNumber = penNumberInput.value.trim();
+        const penType = penTypeInput.value;
+        let count;
+        let motherSowPen = null;
+
+        if (!penNumber || !penType) {
+            addPenModalError.innerText = "Pen Number and Type are required.";
+            addPenModalError.classList.remove('hidden');
+            return;
+        }
+
+        const pens = getPensFromStorage();
+        if (pens[penNumber]) {
+            addPenModalError.innerText = "Pen Number already exists.";
+            addPenModalError.classList.remove('hidden');
+            return;
+        }
+
+        let penData = { type: penType };
+
+        if (penType === 'Piglet') {
+            motherSowPen = motherSowPenSelect.value;
+            count = parseInt(pigletCountInput.value, 10);
+            if (!motherSowPen) {
+                 addPenModalError.innerText = "Mother Sow Pen is required for Piglet pens.";
+                 addPenModalError.classList.remove('hidden');
+                 return;
+            }
+             if (isNaN(count) || count < 0) {
+                 addPenModalError.innerText = "Valid Number of Piglets is required.";
+                 addPenModalError.classList.remove('hidden');
+                 return;
+             }
+            penData.motherSowPen = motherSowPen;
+            penData.count = count;
+        } else {
+            count = parseInt(animalCountInput.value, 10);
+            if (isNaN(count) || count < 0) {
+                 addPenModalError.innerText = "Valid Number of Animals is required.";
+                 addPenModalError.classList.remove('hidden');
+                 return;
+            }
+            penData.count = count;
+        }
+
+        pens[penNumber] = penData;
+        savePensToStorage(pens);
+        renderPens(); // Re-render the pen display
+        closeAddPenModal();
+    }
+
+
+    function handleRecordBirthSubmit(event) {
+         event.preventDefault();
+         recordBirthModalError.classList.add('hidden');
+
+         const motherSowPen = birthMotherSowPenSelect.value;
+         const dob = birthDateInput.value;
+         const totalBorn = parseInt(birthTotalBornInput.value, 10);
+         const deaths = parseInt(birthDeathsInput.value, 10);
+
+         if (!motherSowPen || !dob || isNaN(totalBorn) || totalBorn < 0 || isNaN(deaths) || deaths < 0) {
+             recordBirthModalError.innerText = "Please fill in all fields with valid numbers.";
+             recordBirthModalError.classList.remove('hidden');
+             return;
+         }
+
+         if (deaths > totalBorn) {
+              recordBirthModalError.innerText = "Number of deaths cannot exceed total born.";
+              recordBirthModalError.classList.remove('hidden');
+              return;
+         }
+
+         const alive = totalBorn - deaths;
+         const recordId = `birth-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`; // Simple unique ID
+
+         const newRecord = {
+             id: recordId,
+             motherSowPen: motherSowPen,
+             dob: dob,
+             totalBorn: totalBorn,
+             deaths: deaths,
+             alive: alive
+         };
+
+         const births = getBirthsFromStorage();
+         births.push(newRecord);
+         saveBirthsToStorage(births);
+
+         // Optional: Update count in the associated piglet pen if one exists?
+         // This requires more complex logic to find/create the right piglet pen.
+         // For now, just record the birth. User manages pens separately.
+
+         renderBirthingRecords();
+         closeRecordBirthModal();
+    }
+
+    // --- Delete Functions ---
+     function deletePen(penNumber) {
+        if (!confirm(`Are you sure you want to delete pen "${penNumber}"? This cannot be undone.`)) {
+            return;
+        }
+        const pens = getPensFromStorage();
+        if (pens[penNumber]) {
+            // Check if this pen is a mother sow for any piglet pens
+            const isMother = Object.values(pens).some(p => p.type === 'Piglet' && p.motherSowPen === penNumber);
+            if (isMother) {
+                 alert(`Cannot delete pen "${penNumber}" because it is listed as the mother sow for one or more piglet pens. Please update or delete the piglet pens first.`);
+                 return;
+            }
+            // Check if this pen is referenced in any birth records
+             const births = getBirthsFromStorage();
+             const isReferencedInBirths = births.some(b => b.motherSowPen === penNumber);
+              if (isReferencedInBirths) {
+                  alert(`Cannot delete pen "${penNumber}" because it is referenced in birthing records. Please delete the associated birth records first.`);
+                  return;
+              }
+
+            delete pens[penNumber];
+            savePensToStorage(pens);
+            renderPens(); // Re-render pens
+        } else {
+            alert("Error: Pen not found for deletion.");
+        }
+     }
+
+     function deleteBirthRecord(recordId) {
+         if (!confirm(`Are you sure you want to delete this birth record? This cannot be undone.`)) {
+            return;
+         }
+         let births = getBirthsFromStorage();
+         const initialLength = births.length;
+         births = births.filter(record => record.id !== recordId);
+
+         if (births.length < initialLength) {
+            saveBirthsToStorage(births);
+            renderBirthingRecords();
+         } else {
+             alert("Error: Birth record not found for deletion.");
+         }
+     }
+
+    // --- Event Listeners and Initial Load ---
+
+    // Show/hide specific options in Add Pen modal based on type
+     penTypeInput.addEventListener('change', function() {
+         const selectedType = this.value;
+         if (selectedType === 'Piglet') {
+             pigletOptionsDiv.classList.remove('hidden');
+             sowBoarFattenerOptionsDiv.classList.add('hidden');
+             motherSowPenSelect.required = true;
+             pigletCountInput.required = true;
+             animalCountInput.required = false;
+         } else {
+             pigletOptionsDiv.classList.add('hidden');
+             sowBoarFattenerOptionsDiv.classList.remove('hidden');
+             motherSowPenSelect.required = false;
+             pigletCountInput.required = false;
+             animalCountInput.required = true;
+             // Set default count for Sow/Boar maybe?
+             if (selectedType === 'Sow' || selectedType === 'Boar') {
+                 animalCountInput.value = '1';
+             } else {
+                 animalCountInput.value = ''; // Clear for Fattener
+             }
+         }
+     });
+
+    // Auto-calculate alive piglets in Record Birth modal
+    birthTotalBornInput.addEventListener('input', calculateAlivePiglets);
+    birthDeathsInput.addEventListener('input', calculateAlivePiglets);
+
+    function calculateAlivePiglets() {
+        const totalBorn = parseInt(birthTotalBornInput.value, 10);
+        const deaths = parseInt(birthDeathsInput.value, 10);
+        if (!isNaN(totalBorn) && totalBorn >= 0 && !isNaN(deaths) && deaths >= 0 && deaths <= totalBorn) {
+            birthAliveInput.value = totalBorn - deaths;
+        } else {
+            birthAliveInput.value = ''; // Clear if inputs are invalid
+        }
+    }
+
+    // Initial load
+    document.addEventListener('DOMContentLoaded', () => {
+        renderPens();
+        renderBirthingRecords();
+    });
+
+</script>
+
+</body>
+</html>

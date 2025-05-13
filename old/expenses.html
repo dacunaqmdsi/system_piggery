@@ -1,0 +1,426 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Expenses - Piggery Farm MS</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        /* Consistent UI Styles */
+        .btn-primary { background: linear-gradient(135deg, #e546b5 0%, #e546b5 100%); color: white; transition: all 0.2s ease; }
+        .btn-primary:hover { background: linear-gradient(135deg, #e546b5 0%, #e546b5 100%); transform: translateY(-1px); box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        .btn-secondary { background: #f3f4f6; color: #e54698; transition: all 0.2s ease; }
+        .btn-secondary:hover { background: #e5e7eb; transform: translateY(-1px); box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        .input-field { border: 2px solid #e5e7eb; transition: all 0.2s ease; padding: 0.75rem; border-radius: 0.5rem; width: 100%; }
+        .input-field:focus { border-color: #e546b5; box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1); outline: none; }
+        .select-field { border: 2px solid #e5e7eb; transition: all 0.2s ease; padding: 0.75rem; border-radius: 0.5rem; width: 100%; background-color: white; }
+        .select-field:focus { border-color: #e546b5; box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1); outline: none; }
+        .textarea-field { border: 2px solid #e5e7eb; transition: all 0.2s ease; padding: 0.75rem; border-radius: 0.5rem; width: 100%; }
+        .textarea-field:focus { border-color: #e546b5; box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1); outline: none; }
+        .card { background-color: white; border-radius: 0.5rem; box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06); padding: 1.5rem; }
+        .table-container { background-color: white; padding: 1.5rem; border-radius: 0.5rem; box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06); }
+        th { background-color: #f9fafb; color: #374151; font-weight: 600; text-align: left; padding: 0.75rem 1rem; }
+        td { padding: 0.75rem 1rem; border-bottom: 1px solid #e5e7eb; color: #1f2937; vertical-align: top; }
+        tbody tr:last-child td { border-bottom: none; }
+        .modal-backdrop { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0, 0, 0, 0.5); display: flex; justify-content: center; align-items: center; z-index: 50; }
+        .modal-content { background: white; padding: 2rem; border-radius: 0.5rem; box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05); width: 90%; max-width: 800px; }
+        .po-modal-content { max-height: 80vh; overflow-y: auto; } /* For scrollable PO */
+        .po-section { margin-bottom: 1.5rem; border-bottom: 1px solid #eee; padding-bottom: 1rem; }
+        .po-section:last-child { border-bottom: none; padding-bottom: 0; }
+        .po-title { font-size: 1.5rem; font-weight: bold; text-align: center; margin-bottom: 1rem; }
+        .po-header p { margin-bottom: 0.25rem; font-size: 0.9rem; }
+        .po-table { width: 100%; margin-top: 1rem; font-size: 0.9rem; border-collapse: collapse; }
+        .po-table th, .po-table td { text-align: left; padding: 8px; border: 1px solid #ddd; }
+        .po-table th { background-color: #f2f2f2; }
+        .po-footer { margin-top: 2rem; font-size: 0.85rem; }
+    </style>
+</head>
+<body class="bg-gray-100 p-6">
+
+    <div class="flex justify-between items-center mb-6">
+        <h1 class="text-3xl font-bold text-gray-800">Expenses</h1>
+        <div>
+             <button onclick="generateLowStockPO()" class="btn-secondary px-4 py-2 rounded-lg font-semibold flex items-center space-x-2 mr-3">
+                <i class="fas fa-file-invoice-dollar"></i>
+                <span>Generate PO (Low Stock)</span>
+            </button>
+             <button onclick="openExpenseModal()" class="btn-primary px-4 py-2 rounded-lg font-semibold flex items-center space-x-2">
+                <i class="fas fa-plus"></i>
+                <span>Add Expense</span>
+            </button>
+        </div>
+    </div>
+
+    <!-- Expense Table -->
+    <div class="table-container overflow-x-auto">
+        <table class="min-w-full divide-y divide-gray-200">
+            <thead>
+                <tr>
+                    <th>Date</th>
+                    <th>Category</th>
+                    <th>Description</th>
+                    <th>Amount</th>
+                    <th>Receipt/Ref #</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody id="expense-table-body" class="bg-white divide-y divide-gray-200">
+                <!-- Expense rows will be populated here -->
+                 <tr><td colspan="6" class="text-center text-gray-500 py-4">No expenses recorded yet.</td></tr>
+            </tbody>
+        </table>
+    </div>
+
+
+    <!-- Add/Edit Expense Modal -->
+    <div id="expense-modal" class="modal-backdrop hidden">
+        <div class="modal-content" style="max-width: 600px;"> <!-- Slightly smaller modal -->
+            <h2 id="expense-modal-title" class="text-2xl font-bold text-gray-800 mb-6">Add New Expense</h2>
+            <form id="expense-form" onsubmit="handleExpenseFormSubmit(event)">
+                 <input type="hidden" id="edit-expense-id"> <!-- To store ID when editing -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label for="expense-date" class="block text-gray-700 font-medium mb-1">Date</label>
+                        <input id="expense-date" type="date" class="input-field" required>
+                    </div>
+                    <div>
+                        <label for="expense-category" class="block text-gray-700 font-medium mb-1">Category</label>
+                         <select id="expense-category" class="select-field" required>
+                            <option value="" disabled selected>Select category</option>
+                            <option value="Feed">Feed</option>
+                            <option value="Medicine/Vitamins">Medicine/Vitamins</option>
+                            <option value="Utilities">Utilities (Water, Electricity)</option>
+                            <option value="Salaries">Salaries/Labor</option>
+                            <option value="Maintenance/Repairs">Maintenance/Repairs</option>
+                            <option value="Equipment Purchase">Equipment Purchase</option>
+                            <option value="Transportation">Transportation</option>
+                            <option value="Other">Other</option>
+                        </select>
+                    </div>
+                    <div class="md:col-span-2">
+                        <label for="expense-description" class="block text-gray-700 font-medium mb-1">Description</label>
+                        <input id="expense-description" type="text" placeholder="e.g., Purchase of 10 bags Grower Feed" class="input-field" required>
+                    </div>
+                     <div>
+                        <label for="expense-amount" class="block text-gray-700 font-medium mb-1">Amount (₱)</label>
+                        <input id="expense-amount" type="number" min="0" step="0.01" placeholder="Enter amount" class="input-field" required>
+                    </div>
+                     <div>
+                        <label for="expense-receipt" class="block text-gray-700 font-medium mb-1">Receipt/Reference # (Optional)</label>
+                        <input id="expense-receipt" type="text" placeholder="e.g., OR# 12345" class="input-field">
+                    </div>
+                </div>
+                <p id="expense-modal-error" class="text-red-500 hidden mt-4 text-sm"></p>
+                <div class="mt-6 flex justify-end space-x-3">
+                    <button type="button" onclick="closeExpenseModal()" class="btn-secondary px-4 py-2 rounded-lg font-semibold">Cancel</button>
+                    <button type="submit" id="expense-modal-submit-btn" class="btn-primary px-4 py-2 rounded-lg font-semibold">Add Expense</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+     <!-- Purchase Order Modal -->
+    <div id="po-modal" class="modal-backdrop hidden">
+        <div class="modal-content po-modal-content">
+             <div class="flex justify-between items-start mb-4">
+                <h2 class="text-2xl font-bold text-gray-800">Purchase Order Suggestion</h2>
+                 <button onclick="closePOModal()" class="text-gray-400 hover:text-gray-600">
+                     <i class="fas fa-times fa-lg"></i>
+                 </button>
+            </div>
+             <div id="po-content">
+                 <!-- PO Details will be populated here -->
+                 <p class="text-center text-gray-500 py-4">Loading Purchase Order...</p>
+             </div>
+             <div class="text-center mt-6">
+                  <button onclick="printPO()" class="btn-secondary px-4 py-2 rounded-lg">
+                      <i class="fas fa-print mr-1"></i> Print Purchase Order
+                  </button>
+             </div>
+        </div>
+    </div>
+
+<script>
+    const expenseTableBody = document.getElementById('expense-table-body');
+    const expenseModal = document.getElementById('expense-modal');
+    const expenseModalTitle = document.getElementById('expense-modal-title');
+    const expenseModalSubmitBtn = document.getElementById('expense-modal-submit-btn');
+    const expenseForm = document.getElementById('expense-form');
+    const editExpenseIdInput = document.getElementById('edit-expense-id');
+    const expenseDateInput = document.getElementById('expense-date');
+    const expenseCategoryInput = document.getElementById('expense-category');
+    const expenseDescriptionInput = document.getElementById('expense-description');
+    const expenseAmountInput = document.getElementById('expense-amount');
+    const expenseReceiptInput = document.getElementById('expense-receipt');
+    const expenseModalError = document.getElementById('expense-modal-error');
+
+    const poModal = document.getElementById('po-modal');
+    const poContent = document.getElementById('po-content');
+
+    const PRODUCTS_STORAGE_KEY = 'farmProducts'; // Need this to check inventory
+    const EXPENSES_STORAGE_KEY = 'farmExpenses';
+    let isEditMode = false;
+
+    // --- Data Handling (Expenses) ---
+    function getExpensesFromStorage() {
+        const expensesJson = localStorage.getItem(EXPENSES_STORAGE_KEY);
+        try {
+            return expensesJson ? JSON.parse(expensesJson) : [];
+        } catch (e) {
+            console.error("Error parsing expenses from localStorage:", e);
+            return [];
+        }
+    }
+
+    function saveExpensesToStorage(expenses) {
+        try {
+            localStorage.setItem(EXPENSES_STORAGE_KEY, JSON.stringify(expenses));
+        } catch (e) {
+            console.error("Error saving expenses to localStorage:", e);
+            alert("Could not save expense data. Storage might be full.");
+        }
+    }
+    
+    // --- Data Handling (Products - Read Only) ---
+     function getProductsFromStorage() {
+        const productsJson = localStorage.getItem(PRODUCTS_STORAGE_KEY);
+        try {
+            return productsJson ? JSON.parse(productsJson) : [];
+        } catch (e) {
+            console.error("Error parsing products from localStorage:", e);
+            return [];
+        }
+    }
+
+    // --- Rendering (Expenses) ---
+    function renderExpenseTable() {
+        const expenses = getExpensesFromStorage();
+        expenseTableBody.innerHTML = ''; // Clear existing rows
+
+        if (expenses.length === 0) {
+             expenseTableBody.innerHTML = '<tr><td colspan="6" class="text-center text-gray-500 py-4">No expenses recorded yet.</td></tr>';
+             return;
+        }
+
+        // Sort by date descending
+        expenses.sort((a, b) => new Date(b.date) - new Date(a.date));
+
+         expenses.forEach(expense => {
+             const row = document.createElement('tr');
+             row.innerHTML = `
+                 <td>${expense.date || 'N/A'}</td>
+                 <td>${expense.category || 'N/A'}</td>
+                 <td>${expense.description || 'N/A'}</td>
+                 <td>₱${(parseFloat(expense.amount) || 0).toFixed(2)}</td>
+                 <td>${expense.receipt || 'N/A'}</td>
+                 <td class="text-center space-x-2">
+                     <button onclick="openExpenseModal('${expense.id}')" class="text-blue-600 hover:text-blue-800 transition duration-150 ease-in-out" title="Edit Expense">
+                         <i class="fas fa-edit"></i>
+                     </button>
+                     <button onclick="deleteExpense('${expense.id}')" class="text-red-600 hover:text-red-800 transition duration-150 ease-in-out" title="Delete Expense">
+                         <i class="fas fa-trash-alt"></i>
+                     </button>
+                 </td>
+             `;
+             expenseTableBody.appendChild(row);
+         });
+    }
+
+    // --- Expense Modal Handling ---
+    function openExpenseModal(expenseId = null) {
+        expenseForm.reset();
+        expenseModalError.classList.add('hidden');
+        isEditMode = !!expenseId;
+        setDefaultExpenseDate(); // Set default date
+
+        if (isEditMode) {
+            const expenses = getExpensesFromStorage();
+            const expense = expenses.find(ex => ex.id === expenseId);
+            if (!expense) {
+                alert("Error: Expense not found.");
+                return;
+            }
+            expenseModalTitle.textContent = 'Edit Expense';
+            expenseModalSubmitBtn.textContent = 'Save Changes';
+            editExpenseIdInput.value = expense.id;
+            expenseDateInput.value = expense.date || '';
+            expenseCategoryInput.value = expense.category || '';
+            expenseDescriptionInput.value = expense.description || '';
+            expenseAmountInput.value = expense.amount || 0;
+            expenseReceiptInput.value = expense.receipt || '';
+
+        } else {
+            expenseModalTitle.textContent = 'Add New Expense';
+            expenseModalSubmitBtn.textContent = 'Add Expense';
+            editExpenseIdInput.value = '';
+        }
+        expenseModal.classList.remove('hidden');
+    }
+
+    function closeExpenseModal() {
+        expenseModal.classList.add('hidden');
+    }
+
+     function setDefaultExpenseDate() {
+         const today = new Date().toISOString().split('T')[0];
+         expenseDateInput.value = today;
+    }
+
+    // --- Expense Form Submission & Deletion ---
+    function handleExpenseFormSubmit(event) {
+        event.preventDefault();
+        expenseModalError.classList.add('hidden');
+
+        const date = expenseDateInput.value;
+        const category = expenseCategoryInput.value;
+        const description = expenseDescriptionInput.value.trim();
+        const amount = parseFloat(expenseAmountInput.value);
+        const receipt = expenseReceiptInput.value.trim();
+        const expenseId = editExpenseIdInput.value;
+
+        if (!date || !category || !description || isNaN(amount) || amount <= 0) {
+            expenseModalError.innerText = "Please fill in Date, Category, Description, and a valid Amount (> 0).";
+            expenseModalError.classList.remove('hidden');
+            return;
+        }
+
+        let expenses = getExpensesFromStorage();
+
+        if (isEditMode) {
+            const index = expenses.findIndex(ex => ex.id === expenseId);
+            if (index === -1) {
+                 alert("Error: Could not find expense to update.");
+                 return;
+            }
+            expenses[index] = {
+                ...expenses[index],
+                date, category, description, amount, receipt
+            };
+        } else {
+            const newExpense = {
+                 id: `exp-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`,
+                 date, category, description, amount, receipt
+            };
+            expenses.push(newExpense);
+        }
+
+        saveExpensesToStorage(expenses);
+        renderExpenseTable();
+        closeExpenseModal();
+    }
+
+     function deleteExpense(expenseId) {
+         if (!confirm("Are you sure you want to delete this expense record?")) {
+            return;
+         }
+         let expenses = getExpensesFromStorage();
+         const initialLength = expenses.length;
+         expenses = expenses.filter(ex => ex.id !== expenseId);
+
+         if (expenses.length < initialLength) {
+            saveExpensesToStorage(expenses);
+            renderExpenseTable();
+         } else {
+             alert("Error: Expense record not found for deletion.");
+         }
+     }
+
+     // --- Purchase Order Generation --- 
+     function generateLowStockPO() {
+         const products = getProductsFromStorage();
+         const lowStockItems = products.filter(p => {
+             const quantity = parseFloat(p.quantity) || 0;
+             const criticalLevel = parseFloat(p.criticalLevel) || 0;
+             return quantity <= criticalLevel;
+         });
+
+         if (lowStockItems.length === 0) {
+             poContent.innerHTML = '<p class="text-center text-gray-600 py-4">No products are currently below their critical stock level.</p>';
+         } else {
+            const poDate = new Date().toLocaleDateString();
+            const poNumber = `PO-${Date.now()}`;
+            let itemsHtml = '';
+
+            lowStockItems.forEach(item => {
+                const currentQuantity = parseFloat(item.quantity) || 0;
+                const criticalLevel = parseFloat(item.criticalLevel) || 0;
+                 // Simple reorder logic: aim to have double the critical level
+                const targetQuantity = criticalLevel * 2;
+                const reorderQty = Math.max(0, Math.ceil(targetQuantity - currentQuantity)); // Use Math.ceil for whole units if needed
+
+                itemsHtml += `
+                    <tr>
+                        <td>${item.name}</td>
+                        <td>${item.category}</td>
+                        <td>${currentQuantity} ${item.unit}</td>
+                        <td>${criticalLevel} ${item.unit}</td>
+                        <td>${reorderQty} ${item.unit}</td>
+                        <td></td>  <!-- Placeholder for Supplier/Price -->
+                    </tr>
+                `;
+            });
+
+             poContent.innerHTML = `
+                 <div class="po-header po-section">
+                     <h3 class="po-title">PURCHASE ORDER</h3>
+                     <p><strong>PO Number:</strong> ${poNumber}</p>
+                     <p><strong>Date Generated:</strong> ${poDate}</p>
+                     <p><strong>Farm:</strong> Dimayacyac's Piggery Farm</p>
+                 </div>
+                 <div class="po-items po-section">
+                     <h4 class="font-semibold mb-2">Items to Reorder (Low Stock):</h4>
+                     <table class="po-table">
+                        <thead>
+                             <tr>
+                                 <th>Product Name</th>
+                                 <th>Category</th>
+                                 <th>Current Qty</th>
+                                 <th>Critical Level</th>
+                                 <th>Suggested Reorder Qty</th>
+                                 <th>Notes/Supplier</th>
+                             </tr>
+                        </thead>
+                        <tbody>
+                             ${itemsHtml}
+                        </tbody>
+                     </table>
+                 </div>
+                 <div class="po-footer">
+                    <p><strong>Generated By:</strong> [System]</p>
+                    <p><strong>Notes:</strong> This is a system-generated suggestion based on current inventory levels marked as critical. Please verify quantities and pricing before ordering.</p>
+                 </div>
+            `;
+         }
+
+         poModal.classList.remove('hidden');
+     }
+
+     function closePOModal() {
+         poModal.classList.add('hidden');
+     }
+
+     function printPO() {
+        const printContent = poContent.innerHTML;
+         const printWindow = window.open('', '_blank', 'height=800,width=1000');
+         printWindow.document.write('<html><head><title>Purchase Order</title>');
+         // Basic print styles for PO
+         printWindow.document.write('<style> body { font-family: sans-serif; margin: 20px; } .po-title { font-size: 1.5rem; font-weight: bold; text-align: center; margin-bottom: 1rem; } .po-header p { margin-bottom: 0.25rem; font-size: 0.9rem; } .po-table { width: 100%; margin-top: 1rem; font-size: 0.9rem; border-collapse: collapse; } .po-table th, .po-table td { text-align: left; padding: 8px; border: 1px solid #ddd; } .po-table th { background-color: #f2f2f2; } .po-footer { margin-top: 2rem; font-size: 0.85rem; border-top: 1px solid #ccc; padding-top: 1rem;} </style>');
+         printWindow.document.write('</head><body>');
+         printWindow.document.write(printContent);
+         printWindow.document.write('</body></html>');
+         printWindow.document.close();
+         printWindow.focus();
+         printWindow.print();
+     }
+
+    // --- Initial Load ---
+    document.addEventListener('DOMContentLoaded', () => {
+        setDefaultExpenseDate();
+        renderExpenseTable();
+    });
+
+</script>
+
+</body>
+</html>

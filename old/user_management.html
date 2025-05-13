@@ -1,0 +1,410 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>User Management - Piggery Farm MS</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        /* Enhanced UI Styles - Consistent with index.html */
+        .btn-primary {
+            background: linear-gradient(135deg, #e546b5 0%, #e546b5 100%);
+            color: white;
+            transition: all 0.2s ease;
+        }
+        .btn-primary:hover {
+            background: linear-gradient(135deg, #e546b5 0%, #e546b5 100%);
+            transform: translateY(-1px);
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .btn-secondary {
+            background: #f3f4f6;
+            color: #e54698;
+            transition: all 0.2s ease;
+        }
+        .btn-secondary:hover {
+            background: #e5e7eb;
+            transform: translateY(-1px);
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .btn-danger {
+            background-color: #ef4444; /* red-500 */
+            color: white;
+            transition: all 0.2s ease;
+        }
+        .btn-danger:hover {
+            background-color: #dc2626; /* red-600 */
+            transform: translateY(-1px);
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .input-field {
+            border: 2px solid #e5e7eb;
+            transition: all 0.2s ease;
+            padding: 0.75rem;
+            border-radius: 0.5rem;
+            width: 100%;
+        }
+        .input-field:focus {
+            border-color: #e546b5;
+            box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
+            outline: none;
+        }
+        .select-field {
+             border: 2px solid #e5e7eb;
+             transition: all 0.2s ease;
+             padding: 0.75rem;
+             border-radius: 0.5rem;
+             width: 100%;
+             background-color: white; /* Ensure background for select */
+        }
+        .select-field:focus {
+             border-color: #e546b5;
+             box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
+             outline: none;
+        }
+        .modal-backdrop {
+             position: fixed;
+             top: 0;
+             left: 0;
+             width: 100%;
+             height: 100%;
+             background-color: rgba(0, 0, 0, 0.5);
+             display: flex;
+             justify-content: center;
+             align-items: center;
+             z-index: 50;
+        }
+        .modal-content {
+             background: white;
+             padding: 2rem;
+             border-radius: 0.5rem;
+             box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+             width: 90%;
+             max-width: 500px;
+        }
+        .table-container {
+            background-color: white;
+            padding: 1.5rem;
+            border-radius: 0.5rem;
+            box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
+        }
+        th {
+            background-color: #f9fafb; /* gray-50 */
+            color: #374151; /* gray-700 */
+            font-weight: 600;
+            text-align: left;
+            padding: 0.75rem 1rem;
+        }
+        td {
+            padding: 0.75rem 1rem;
+            border-bottom: 1px solid #e5e7eb; /* gray-200 */
+            color: #1f2937; /* gray-800 */
+        }
+        tbody tr:last-child td {
+            border-bottom: none;
+        }
+    </style>
+</head>
+<body class="bg-gray-100 p-6">
+
+    <div id="management-content">
+        <div class="flex justify-between items-center mb-6">
+            <h1 class="text-3xl font-bold text-gray-800">User Management</h1>
+            <button id="add-user-btn" onclick="openUserModal()" class="btn-primary px-4 py-2 rounded-lg font-semibold flex items-center space-x-2">
+                <i class="fas fa-plus"></i>
+                <span>Add User</span>
+            </button>
+        </div>
+
+        <div class="table-container overflow-x-auto">
+            <table class="min-w-full divide-y divide-gray-200">
+                <thead>
+                    <tr>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Username</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Account Type</th>
+                        <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="user-table-body" class="bg-white divide-y divide-gray-200">
+                    <!-- User rows will be populated here -->
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <div id="access-denied" class="hidden text-center p-10 bg-white rounded-lg shadow">
+        <i class="fas fa-exclamation-triangle text-4xl text-red-500 mb-4"></i>
+        <h2 class="text-2xl font-bold text-gray-800 mb-2">Access Denied</h2>
+        <p class="text-gray-600">Only Farm Owners can manage users.</p>
+    </div>
+
+
+    <!-- Add/Edit User Modal -->
+    <div id="user-modal" class="modal-backdrop hidden">
+        <div class="modal-content">
+            <h2 id="modal-title" class="text-2xl font-bold text-gray-800 mb-6">Add New User</h2>
+            <form id="user-form" onsubmit="handleUserFormSubmit(event)">
+                 <input type="hidden" id="edit-username-hidden"> <!-- To store username when editing -->
+                <div class="space-y-4">
+                    <div>
+                        <label for="modal-username" class="block text-gray-700 font-medium mb-1">Username</label>
+                        <input id="modal-username" type="text" placeholder="Enter username" class="input-field" required>
+                    </div>
+                    <div>
+                        <label for="modal-password" class="block text-gray-700 font-medium mb-1">Password</label>
+                        <input id="modal-password" type="password" placeholder="Enter password" class="input-field" required>
+                         <p id="password-hint" class="text-xs text-gray-500 mt-1 hidden">Leave blank to keep current password.</p>
+                    </div>
+                    <div>
+                        <label for="modal-account-type" class="block text-gray-700 font-medium mb-1">Account Type</label>
+                        <select id="modal-account-type" class="select-field" required>
+                            <option value="" disabled selected>Select account type</option>
+                            <option value="Farm Owner">Farm Owner</option>
+                            <option value="Care Taker">Care Taker</option>
+                        </select>
+                    </div>
+                </div>
+                <p id="modal-error" class="text-red-500 hidden mt-4 text-sm"></p>
+                <div class="mt-6 flex justify-end space-x-3">
+                    <button type="button" onclick="closeUserModal()" class="btn-secondary px-4 py-2 rounded-lg font-semibold">Cancel</button>
+                    <button type="submit" id="modal-submit-btn" class="btn-primary px-4 py-2 rounded-lg font-semibold">Add User</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+
+    <script>
+        const userTableBody = document.getElementById('user-table-body');
+        const userModal = document.getElementById('user-modal');
+        const modalTitle = document.getElementById('modal-title');
+        const modalSubmitBtn = document.getElementById('modal-submit-btn');
+        const userForm = document.getElementById('user-form');
+        const usernameInput = document.getElementById('modal-username');
+        const passwordInput = document.getElementById('modal-password');
+        const accountTypeInput = document.getElementById('modal-account-type');
+        const editUsernameHidden = document.getElementById('edit-username-hidden');
+        const modalError = document.getElementById('modal-error');
+        const passwordHint = document.getElementById('password-hint');
+        const managementContent = document.getElementById('management-content');
+        const accessDeniedMessage = document.getElementById('access-denied');
+        const addUserBtn = document.getElementById('add-user-btn');
+
+        let currentUserRole = '';
+        let isEditMode = false;
+
+        // Helper function to get users from localStorage (same as in index.html)
+        function getUsersFromStorage() {
+            const usersJson = localStorage.getItem('farmUsers');
+            try {
+                return usersJson ? JSON.parse(usersJson) : {};
+            } catch (e) {
+                console.error("Error parsing users from localStorage:", e);
+                return {};
+            }
+        }
+
+        // Helper function to save users to localStorage (same as in index.html)
+        function saveUsersToStorage(users) {
+            try {
+                localStorage.setItem('farmUsers', JSON.stringify(users));
+            } catch (e) {
+                 console.error("Error saving users to localStorage:", e);
+                 alert("Could not save user data. Storage might be full.");
+            }
+        }
+
+        function checkAccess() {
+             currentUserRole = localStorage.getItem('currentUserRole');
+             console.log('Checking access for role:', currentUserRole);
+             // Allow access ONLY if the role is Farm Owner
+             if (currentUserRole === 'Farm Owner') {
+                 managementContent.classList.remove('hidden');
+                 accessDeniedMessage.classList.add('hidden');
+                 return true;
+             } else {
+                 managementContent.classList.add('hidden');
+                 accessDeniedMessage.classList.remove('hidden');
+                 return false;
+             }
+        }
+
+
+        function renderUserTable() {
+            if (!checkAccess()) return; // Stop if not Farm Owner
+
+            const users = getUsersFromStorage();
+            userTableBody.innerHTML = ''; // Clear existing rows
+
+            // Add default users if they are not meant to be editable/deletable
+            // For now, let's list all including defaults, but disable actions for them.
+            const defaultUsers = {
+                'owner': { type: 'Farm Owner' },
+                'caretaker': { type: 'Care Taker' }
+            };
+
+            const displayUsers = {...defaultUsers, ...users}; // Combine default and stored
+
+            Object.keys(displayUsers).forEach(username => {
+                const user = displayUsers[username];
+                const isDefault = username === 'owner' || username === 'caretaker';
+
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${username}</td>
+                    <td>${user.type}</td>
+                    <td class="text-center space-x-2">
+                        ${isDefault ? '<span class="text-gray-400 italic text-sm">Default</span>' : `
+                        <button onclick="openUserModal('${username}')" class="text-blue-600 hover:text-blue-800 transition duration-150 ease-in-out" title="Edit">
+                            <i class="fas fa-edit"></i>
+                        </button>
+                        <button onclick="deleteUser('${username}')" class="text-red-600 hover:text-red-800 transition duration-150 ease-in-out" title="Delete">
+                            <i class="fas fa-trash-alt"></i>
+                        </button>
+                        `}
+                    </td>
+                `;
+                userTableBody.appendChild(row);
+            });
+             if (Object.keys(displayUsers).length === 0) {
+                 const row = document.createElement('tr');
+                 row.innerHTML = `<td colspan="3" class="text-center text-gray-500 py-4">No users found.</td>`;
+                 userTableBody.appendChild(row);
+             }
+        }
+
+        function openUserModal(usernameToEdit = null) {
+            if (!checkAccess()) return; // Ensure access before opening modal (Farm Owner only)
+
+            userForm.reset(); // Clear previous form data
+            modalError.classList.add('hidden');
+            isEditMode = !!usernameToEdit; // Set edit mode flag
+
+            if (isEditMode) {
+                const users = getUsersFromStorage();
+                const user = users[usernameToEdit];
+                if (!user) {
+                    console.error("User not found for editing:", usernameToEdit);
+                    alert("Error: Could not find user to edit.");
+                    return;
+                }
+                modalTitle.textContent = 'Edit User';
+                modalSubmitBtn.textContent = 'Save Changes';
+                usernameInput.value = usernameToEdit;
+                usernameInput.disabled = true; // Don't allow username change
+                passwordInput.placeholder = 'Leave blank to keep current password';
+                passwordInput.required = false; // Password not required for edit
+                passwordHint.classList.remove('hidden');
+                accountTypeInput.value = user.type;
+                editUsernameHidden.value = usernameToEdit; // Store original username
+            } else {
+                modalTitle.textContent = 'Add New User';
+                modalSubmitBtn.textContent = 'Add User';
+                usernameInput.disabled = false;
+                passwordInput.placeholder = 'Enter password';
+                passwordInput.required = true;
+                passwordHint.classList.add('hidden');
+                editUsernameHidden.value = '';
+            }
+
+            userModal.classList.remove('hidden');
+        }
+
+        function closeUserModal() {
+            userModal.classList.add('hidden');
+        }
+
+        function handleUserFormSubmit(event) {
+            event.preventDefault();
+            if (!checkAccess()) return; // Double check access on submit (Farm Owner only)
+
+            const username = usernameInput.value.trim();
+            const password = passwordInput.value; // Don't trim password
+            const accountType = accountTypeInput.value;
+            const originalUsername = editUsernameHidden.value; // Get original username for editing
+
+            modalError.classList.add('hidden');
+
+            if (!username || (!isEditMode && !password) || !accountType) {
+                 modalError.innerText = "Please fill in all required fields.";
+                 modalError.classList.remove("hidden");
+                 return;
+            }
+
+            const users = getUsersFromStorage();
+
+            // Check for username conflicts (only if adding new or changing username - though changing is disabled here)
+             if (!isEditMode && (username === 'owner' || username === 'caretaker' || users[username])) {
+                 modalError.innerText = "Username already taken.";
+                 modalError.classList.remove("hidden");
+                 return;
+             }
+
+            if (isEditMode) {
+                // Update existing user
+                const userToUpdate = users[originalUsername];
+                 if (!userToUpdate) {
+                     modalError.innerText = "Error: Original user not found.";
+                     modalError.classList.remove("hidden");
+                     return;
+                 }
+                if (password) { // Update password only if a new one is provided
+                    userToUpdate.password = password;
+                }
+                userToUpdate.type = accountType;
+                users[originalUsername] = userToUpdate; // Re-assign (or could directly modify)
+                console.log("User updated:", originalUsername);
+
+            } else {
+                // Add new user
+                users[username] = { password: password, type: accountType };
+                 console.log("User added:", username);
+            }
+
+            saveUsersToStorage(users);
+            closeUserModal();
+            renderUserTable(); // Refresh the table
+        }
+
+
+        function deleteUser(username) {
+             if (!checkAccess()) return; // Check access (Farm Owner only)
+
+             if (username === 'owner' || username === 'caretaker') {
+                 alert("Default users cannot be deleted.");
+                 return;
+             }
+
+             if (confirm(`Are you sure you want to delete the user "${username}"? This cannot be undone.`)) {
+                 const users = getUsersFromStorage();
+                 if (users[username]) {
+                     delete users[username];
+                     saveUsersToStorage(users);
+                     renderUserTable(); // Refresh table
+                     console.log("User deleted:", username);
+                 } else {
+                     console.error("User not found for deletion:", username);
+                     alert("Error: User not found.");
+                 }
+             }
+        }
+
+        // Initial setup when the module loads
+        document.addEventListener('DOMContentLoaded', () => {
+            if (checkAccess()) {
+                 renderUserTable();
+            }
+        });
+
+        // Listen for storage changes from other tabs/windows if needed (optional)
+        // window.addEventListener('storage', (event) => {
+        //     if (event.key === 'farmUsers' && checkAccess()) {
+        //         renderUserTable();
+        //     }
+        // });
+
+    </script>
+
+</body>
+</html> 

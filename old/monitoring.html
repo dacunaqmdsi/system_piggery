@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Daily Monitoring - Piggery Farm MS</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        /* Consistent UI Styles */
+        .btn-primary { background: linear-gradient(135deg, #e546b5 0%, #e546b5 100%); color: white; transition: all 0.2s ease; }
+        .btn-primary:hover { background: linear-gradient(135deg, #e546b5 0%, #e546b5 100%); transform: translateY(-1px); box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        .btn-secondary { background: #f3f4f6; color: #e54698; transition: all 0.2s ease; }
+        .btn-secondary:hover { background: #e5e7eb; transform: translateY(-1px); box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        .input-field { border: 2px solid #e5e7eb; transition: all 0.2s ease; padding: 0.75rem; border-radius: 0.5rem; width: 100%; }
+        .input-field:focus { border-color: #e546b5; box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1); outline: none; }
+        .textarea-field { border: 2px solid #e5e7eb; transition: all 0.2s ease; padding: 0.75rem; border-radius: 0.5rem; width: 100%; }
+        .textarea-field:focus { border-color: #e546b5; box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1); outline: none; }
+        .card { background-color: white; border-radius: 0.5rem; box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06); padding: 1.5rem; }
+        .table-container { background-color: white; padding: 1.5rem; border-radius: 0.5rem; box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06); }
+        th { background-color: #f9fafb; color: #374151; font-weight: 600; text-align: left; padding: 0.75rem 1rem; }
+        td { padding: 0.75rem 1rem; border-bottom: 1px solid #e5e7eb; color: #1f2937; vertical-align: top; }
+        tbody tr:last-child td { border-bottom: none; }
+    </style>
+</head>
+<body class="bg-gray-100 p-6">
+
+    <h1 class="text-3xl font-bold text-gray-800 mb-6">Daily Monitoring Log</h1>
+
+    <!-- Log Entry Form -->
+    <div class="card mb-8">
+        <h2 class="text-xl font-semibold text-gray-700 mb-4">Log Health Observation</h2>
+        <form id="monitoring-log-form" onsubmit="addLogEntry(event)">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                <div>
+                    <label for="log-date" class="block text-gray-700 font-medium mb-1">Date</label>
+                    <input id="log-date" type="date" class="input-field" required>
+                </div>
+                 <div>
+                    <label for="log-identifier" class="block text-gray-700 font-medium mb-1">Pen ID / Pig Tag</label>
+                    <input id="log-identifier" type="text" placeholder="e.g., Pen F5, Pig #102" class="input-field" required>
+                 </div>
+            </div>
+             <div class="mb-4">
+                <label for="log-symptoms" class="block text-gray-700 font-medium mb-1">Symptoms / Observations</label>
+                <textarea id="log-symptoms" rows="3" placeholder="Describe symptoms like coughing, lameness, not eating, etc." class="textarea-field" required></textarea>
+            </div>
+             <div class="mb-4">
+                <label for="log-action" class="block text-gray-700 font-medium mb-1">Suggested Action (System)</label>
+                <input id="log-action" type="text" class="input-field bg-gray-100" readonly placeholder="Action will be suggested after saving...">
+            </div>
+
+            <p id="log-form-error" class="text-red-500 hidden mt-4 text-sm"></p>
+            <div class="flex justify-end">
+                <button type="submit" class="btn-primary px-6 py-2 rounded-lg font-semibold">
+                    <i class="fas fa-notes-medical mr-2"></i>Log Observation & Suggest Action
+                </button>
+            </div>
+        </form>
+    </div>
+
+    <!-- Monitoring Log History -->
+    <div>
+        <h2 class="text-2xl font-bold text-gray-800 mb-4">Health Log History</h2>
+        <div class="table-container overflow-x-auto">
+            <table class="min-w-full divide-y divide-gray-200">
+                <thead>
+                    <tr>
+                        <th style="width: 15%;">Date</th>
+                        <th style="width: 20%;">Pen/Pig</th>
+                        <th style="width: 35%;">Symptoms/Observations</th>
+                        <th style="width: 30%;">Suggested Action</th>
+                    </tr>
+                </thead>
+                <tbody id="log-history-body" class="bg-white divide-y divide-gray-200">
+                    <!-- Log history rows will be populated here -->
+                     <tr><td colspan="4" class="text-center text-gray-500 py-4">No health log entries found.</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+<script>
+    const logForm = document.getElementById('monitoring-log-form');
+    const logDateInput = document.getElementById('log-date');
+    const logIdentifierInput = document.getElementById('log-identifier');
+    const logSymptomsInput = document.getElementById('log-symptoms');
+    const logActionInput = document.getElementById('log-action');
+    const logFormError = document.getElementById('log-form-error');
+    const logHistoryBody = document.getElementById('log-history-body');
+
+    const MONITORING_LOG_KEY = 'farmMonitoringLog';
+
+    // --- Data Handling ---
+    function getLogEntries() {
+        const logJson = localStorage.getItem(MONITORING_LOG_KEY);
+        try {
+            // Logs stored as an array: [ { id: "...", date: "...", identifier: "...", symptoms: "...", action: "..." }, ... ]
+            return logJson ? JSON.parse(logJson) : [];
+        } catch (e) {
+            console.error("Error parsing monitoring log from localStorage:", e);
+            return [];
+        }
+    }
+
+    function saveLogEntries(logs) {
+        try {
+            localStorage.setItem(MONITORING_LOG_KEY, JSON.stringify(logs));
+        } catch (e) {
+            console.error("Error saving monitoring log to localStorage:", e);
+            alert("Could not save log data. Storage might be full.");
+        }
+    }
+
+    // --- Rendering Log History ---
+    function renderLogHistory() {
+        const logs = getLogEntries();
+        logHistoryBody.innerHTML = ''; // Clear existing
+
+        if (logs.length === 0) {
+            logHistoryBody.innerHTML = '<tr><td colspan="4" class="text-center text-gray-500 py-4">No log entries found.</td></tr>';
+            return;
+        }
+
+        // Sort by date descending (most recent first)
+        logs.sort((a, b) => new Date(b.date) - new Date(a.date));
+
+        logs.forEach(log => {
+            const row = document.createElement('tr');
+            // Use pre-wrap to preserve line breaks in notes/actions
+            row.innerHTML = `
+                <td>${log.date}</td>
+                <td>${log.identifier}</td>
+                <td class="whitespace-pre-wrap">${log.symptoms}</td>
+                <td class="whitespace-pre-wrap">${log.action || 'N/A'}</td> 
+            `;
+            logHistoryBody.appendChild(row);
+        });
+    }
+
+    // --- Simple Action Suggestion Logic ---
+    function determineSuggestedAction(symptoms) {
+        const lowerSymptoms = symptoms.toLowerCase();
+        let suggestions = [];
+
+        if (lowerSymptoms.includes('cough') || lowerSymptoms.includes('thump')) {
+            suggestions.push("Monitor breathing. Check for fever. Consider isolation.");
+        }
+        if (lowerSymptoms.includes('lame') || lowerSymptoms.includes('limp')) {
+            suggestions.push("Check for injury or swelling. Limit movement.");
+        }
+        if (lowerSymptoms.includes('not eating') || lowerSymptoms.includes('no appetite')) {
+            suggestions.push("Monitor closely. Check temperature. Ensure fresh water available.");
+        }
+        if (lowerSymptoms.includes('diarrhea') || lowerSymptoms.includes('scour')) {
+            suggestions.push("Ensure hydration. Check feed. Consider electrolytes/medication if severe.");
+        }
+        if (lowerSymptoms.includes('skin lesion') || lowerSymptoms.includes('rash') || lowerSymptoms.includes('red spots')) {
+             suggestions.push("Inspect lesion closely. Check for parasites. Consider topical treatment or vet consult.");
+        }
+         if (lowerSymptoms.includes('shivering') || lowerSymptoms.includes('cold')) {
+             suggestions.push("Check temperature. Provide warmth/bedding. Monitor for other signs.");
+        }
+
+        if (suggestions.length === 0) {
+            return "Monitor general health. Record any changes.";
+        } else {
+            return suggestions.join(' \n'); // Join multiple suggestions with newline
+        }
+    }
+
+    // --- Form Submission --- 
+    function addLogEntry(event) {
+        event.preventDefault();
+        logFormError.classList.add('hidden');
+        logFormError.textContent = '';
+        logActionInput.value = ''; // Clear previous action
+
+        const date = logDateInput.value;
+        const identifier = logIdentifierInput.value.trim();
+        const symptoms = logSymptomsInput.value.trim();
+
+        if (!date || !identifier || !symptoms) {
+            logFormError.innerText = "Please fill in all fields: Date, Identifier, and Symptoms.";
+            logFormError.classList.remove('hidden');
+            return;
+        }
+
+        // Determine suggested action
+        const suggestedAction = determineSuggestedAction(symptoms);
+        logActionInput.value = suggestedAction; // Display suggested action on form
+
+        const newLog = {
+             id: `log-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`,
+             date: date,
+             identifier: identifier,
+             symptoms: symptoms,
+             action: suggestedAction // Save the suggested action
+        };
+
+        const logs = getLogEntries();
+        logs.push(newLog);
+        saveLogEntries(logs);
+
+        // Optionally reset parts of the form, keep date?
+        logIdentifierInput.value = '';
+        logSymptomsInput.value = '';
+        // logForm.reset(); // Use this if you want to reset the date too
+        // setDefaultDate(); // Reset date if needed
+
+        renderLogHistory(); // Refresh the history table
+    }
+
+    function setDefaultDate() {
+         const today = new Date().toISOString().split('T')[0];
+         logDateInput.value = today;
+    }
+
+    // --- Initial Load ---
+    document.addEventListener('DOMContentLoaded', () => {
+        setDefaultDate();
+        renderLogHistory();
+    });
+
+</script>
+
+</body>
+</html>
