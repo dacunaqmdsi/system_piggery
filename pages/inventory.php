@@ -156,7 +156,7 @@
                             </select>
                         </div>
 
-                        <div id="piglet-options" class="d-none">
+                        <div id="piglet-options" >
                             <div class="mb-3">
                                 <label for="mother-sow-pen" class="form-label text-dark">Mother Sow Pen</label>
                                 <select id="mother-sow-pen" class="form-select">

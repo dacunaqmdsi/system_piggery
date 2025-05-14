@@ -37,7 +37,7 @@
         </div>
 
         <!-- Recent Activity Log -->
-        <div class="col-12">
+        <!-- <div class="col-12">
             <div class="bg-white p-4 rounded shadow-sm">
                 <h5 class="fw-semibold text-secondary mb-3">Recent Activity Log</h5>
                 <div class="table-responsive" style="max-height: 300px; overflow-y: auto;">
@@ -57,7 +57,7 @@
                     </table>
                 </div>
             </div>
-        </div>
+        </div> -->
 
         <!-- Recent Notifications -->
         <div class="col-12">

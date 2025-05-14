@@ -7,7 +7,7 @@ if (isset($_POST['add_user'])) {
 
     $query = "INSERT INTO tblaccounts (username, account_password, account_type)
               VALUES ('$username', '$account_password', '$account_type')";
-
+    Audit($_SESSION['accountid'], 'Added new user', 'Added new user');
     if (mysqli_query($db_connection, $query)) {
         echo "User successfully added.";
     } else {
@@ -31,7 +31,7 @@ if (isset($_POST['update_user'])) {
     }
 
     $query .= " WHERE accountid = '$accountid'";
-
+    Audit($_SESSION['accountid'], 'Updated new user', 'Updated new user');
     if (mysqli_query($db_connection, $query)) {
         echo "User successfully updated.";
     } else {

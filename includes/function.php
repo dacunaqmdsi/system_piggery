@@ -174,10 +174,10 @@ function is_maintenance()
 }
 
 
-function Audit($accountid, $action, $actiontype)
+function Audit($accountid, $activity, $description)
 {
     global $db_connection;
-    return mysqli_query($db_connection, 'insert into tblaudit_trail SET accountid=\'' . $accountid . '\', action=\'' . $action . '\', actiontype=\'' . $actiontype . '\'  ');
+    return mysqli_query($db_connection, 'insert into tblaudittrail SET accountid=\'' . $accountid . '\', description=\'' . $activity . '\', activity=\'' . $description . '\'  ');
 }
 
 function Rank($id)
@@ -221,4 +221,3 @@ function Subcategory($id)
     global $db_connection;
     return GetData('SELECT subcategory FROM tblsubcategory WHERE subcategoryid = ?', 'i', [$id]);
 }
-

@@ -24,6 +24,7 @@ if (isset($_POST['signin']) && isset($_SESSION['token']) && $_SESSION['token'] =
         $_SESSION['username'] = $user['username'];
         $_SESSION['account_type'] = $user['account_type'];
         $_SESSION['is_blocked'] = $user['is_blocked'];
+        Audit($_SESSION['accountid'], 'Login','Login');
         include('home.php');
         exit();
     } else {
@@ -44,6 +45,7 @@ $_SESSION['token'] = rand(1, 100);
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="icon" type="image/png" href="docs/logo.png-removebg-preview.png" />
     <title>Dimayacyac's Piggery Farm Management System</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>

@@ -19,6 +19,7 @@ if (isset($_SESSION['accountid'])) {
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Dimayacyac's Piggery Farm Management System</title>
     <!-- Scripts -->
+    <link rel="icon" type="image/png" href="docs/logo.png-removebg-preview.png" />
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 
     <!-- Bootstrap CSS -->
@@ -293,6 +294,451 @@ if (isset($_SESSION['accountid'])) {
                 }
             });
         }
+
+
+
+
+        function add_customer() {
+            var name = document.getElementById('name').value.trim();
+            var phone = document.getElementById('phone').value.trim();
+            var email = document.getElementById('email').value.trim();
+            var address = document.getElementById('address').value.trim();
+            var notes = document.getElementById('notes').value.trim();
+
+            // Basic validation
+            if (!name) {
+                alert('Full name is required');
+                return;
+            }
+
+            if (!phone) {
+                alert('Phone number is required');
+                return;
+            }
+
+            if (!email) {
+                alert('Email address is required');
+                return;
+            }
+
+            if (!address) {
+                alert('Address is required');
+                return;
+            }
+
+            if (confirm("Are you sure you want to add this customer?")) {
+                var formData = new FormData();
+                formData.append('name', name);
+                formData.append('phone', phone);
+                formData.append('email', email);
+                formData.append('address', address);
+                formData.append('notes', notes);
+                formData.append('add_customer', 1); // Flag for backend to identify this request
+
+                $.ajax({
+                    url: 'pages/customers.php',
+                    type: 'POST',
+                    data: formData,
+                    contentType: false,
+                    processData: false,
+                    success: function(response) {
+                        $("#main_content").html(response); // use response instead of data
+                        $("#main_content").css('opacity', '1');
+                        $('.modal-backdrop').remove();
+
+                    },
+                    error: function() {
+                        alert("Error occurred while adding the customer.");
+                    }
+                });
+            }
+        }
+
+        function select_customer(customerid) {
+            $.ajax({
+                url: 'pages/customers_select.php',
+                type: "GET",
+                data: {
+                    customerid: customerid
+                },
+                dataType: 'json',
+                success: function(data) {
+                    $('#customerid_edit').val(data.customerid);
+                    $('#name_edit').val(data.name);
+                    $('#phone_edit').val(data.phone);
+                    $('#email_edit').val(data.email);
+                    $('#address_edit').val(data.address);
+                    $('#notes_edit').val(data.notes);
+                },
+                error: function() {
+                    alert("Error");
+                }
+            });
+        }
+
+        function edit_customer() {
+            var name_edit = document.getElementById('name_edit').value.trim();
+            var phone_edit = document.getElementById('phone_edit').value.trim();
+            var email_edit = document.getElementById('email_edit').value.trim();
+            var address_edit = document.getElementById('address_edit').value.trim();
+            var notes_edit = document.getElementById('notes_edit').value.trim();
+
+            // Basic validation
+            if (!name_edit) {
+                alert('Full name is required');
+                return;
+            }
+
+            if (!phone_edit) {
+                alert('Phone number is required');
+                return;
+            }
+
+            if (!email_edit) {
+                alert('Email address is required');
+                return;
+            }
+
+            if (!address_edit) {
+                alert('Address is required');
+                return;
+            }
+
+            if (confirm("Are you sure you want to update this customer?")) {
+                var formData = new FormData();
+                formData.append('customerid_edit', document.getElementById('customerid_edit').value);
+                formData.append('name_edit', name_edit);
+                formData.append('phone_edit', phone_edit);
+                formData.append('email_edit', email_edit);
+                formData.append('address_edit', address_edit);
+                formData.append('notes_edit', notes_edit);
+                formData.append('edit_customer', 1); // Flag for backend to identify this request
+
+                $.ajax({
+                    url: 'pages/customers.php',
+                    type: 'POST',
+                    data: formData,
+                    contentType: false,
+                    processData: false,
+                    success: function(response) {
+                        $("#main_content").html(response); // use response instead of data
+                        $("#main_content").css('opacity', '1');
+                        $('.modal-backdrop').remove();
+
+                    },
+                    error: function() {
+                        alert("Error occurred while adding the customer.");
+                    }
+                });
+            }
+        }
+
+
+
+        function add_expense() {
+            var expense_date = document.getElementById('expense_date').value.trim();
+            var categoryid = document.getElementById('categoryid').value;
+            var description = document.getElementById('description').value.trim();
+            var amount = document.getElementById('amount').value.trim();
+            var refnum = document.getElementById('refnum').value.trim();
+
+            // Basic validation
+            if (!expense_date) {
+                alert('Date is required');
+                return;
+            }
+
+            if (!categoryid) {
+                alert('Category is required');
+                return;
+            }
+
+            if (!description) {
+                alert('Description is required');
+                return;
+            }
+
+            if (!amount || isNaN(amount) || parseFloat(amount) <= 0) {
+                alert('Valid amount is required');
+                return;
+            }
+
+            if (confirm("Are you sure you want to add this expense?")) {
+                var formData = new FormData();
+                formData.append('expense_date', expense_date);
+                formData.append('categoryid', categoryid);
+                formData.append('description', description);
+                formData.append('amount', amount);
+                formData.append('refnum', refnum);
+                formData.append('add_expense', 1); // Flag for backend
+
+                $.ajax({
+                    url: 'pages/expenses.php',
+                    type: 'POST',
+                    data: formData,
+                    contentType: false,
+                    processData: false,
+                    success: function(response) {
+                        $("#main_content").html(response);
+                        $("#main_content").css('opacity', '1');
+                        $('#expenseModal').modal('hide');
+                        $('.modal-backdrop').remove();
+                    },
+                    error: function() {
+                        alert("Error occurred while adding the expense.");
+                    }
+                });
+            }
+        }
+
+
+        function select_expense(expenseid) {
+            $.ajax({
+                url: 'pages/expenses_select.php',
+                type: "GET",
+                data: {
+                    expenseid: expenseid
+                },
+                dataType: 'json',
+                success: function(data) {
+                    $('#expenseid_edit').val(data.expenseid);
+                    $('#expense_date_edit').val(data.expense_date);
+                    $('#categoryid_edit').val(data.categoryid);
+                    $('#description_edit').val(data.description);
+                    $('#amount_edit').val(data.amount);
+                    $('#refnum_edit').val(data.refnum);
+                },
+                error: function() {
+                    alert("Error");
+                }
+            });
+        }
+
+
+        function edit_expense() {
+            var expenseid_edit = document.getElementById('expenseid_edit').value.trim();
+            var expense_date_edit = document.getElementById('expense_date_edit').value.trim();
+            var categoryid_edit = document.getElementById('categoryid_edit').value;
+            var description_edit = document.getElementById('description_edit').value.trim();
+            var amount_edit = document.getElementById('amount_edit').value.trim();
+            var refnum_edit = document.getElementById('refnum_edit').value.trim();
+
+            // Basic validation
+            if (!expense_date_edit) {
+                alert('Date is required');
+                return;
+            }
+
+            if (!categoryid_edit) {
+                alert('Category is required');
+                return;
+            }
+
+            if (!description_edit) {
+                alert('Description is required');
+                return;
+            }
+
+            if (!amount_edit || isNaN(amount_edit) || parseFloat(amount_edit) <= 0) {
+                alert('Valid amount is required');
+                return;
+            }
+
+            if (confirm("Are you sure you want to edit this expense?")) {
+                var formData = new FormData();
+                formData.append('expenseid_edit', expenseid_edit);
+                formData.append('expense_date_edit', expense_date_edit);
+                formData.append('categoryid_edit', categoryid_edit);
+                formData.append('description_edit', description_edit);
+                formData.append('amount_edit', amount_edit);
+                formData.append('refnum_edit', refnum_edit);
+                formData.append('edit_expense', 1); // Flag for backend
+
+                $.ajax({
+                    url: 'pages/expenses.php',
+                    type: 'POST',
+                    data: formData,
+                    contentType: false,
+                    processData: false,
+                    success: function(response) {
+                        $("#main_content").html(response);
+                        $("#main_content").css('opacity', '1');
+                        $('#expenseModal').modal('hide');
+                        $('.modal-backdrop').remove();
+                    },
+                    error: function() {
+                        alert("Error occurred while editing the expense.");
+                    }
+                });
+            }
+        }
+
+
+        function add_product() {
+            var product_name = document.getElementById('product_name').value.trim();
+            var categoryid = document.getElementById('categoryid').value;
+            var current_qty = document.getElementById('current_qty').value.trim();
+            var unit = document.getElementById('unit').value.trim();
+            var critical_level = document.getElementById('critical_level').value.trim();
+
+            // Basic validation
+            if (!product_name) {
+                alert('Product name is required');
+                return;
+            }
+
+            if (!categoryid) {
+                alert('Category is required');
+                return;
+            }
+
+            if (!current_qty || isNaN(current_qty) || parseFloat(current_qty) < 0) {
+                alert('Valid current quantity is required');
+                return;
+            }
+
+            if (!unit) {
+                alert('Unit is required');
+                return;
+            }
+
+            if (!critical_level || isNaN(critical_level) || parseFloat(critical_level) < 0) {
+                alert('Valid critical level is required');
+                return;
+            }
+
+            if (confirm("Are you sure you want to add this product?")) {
+                var formData = new FormData();
+                formData.append('product_name', product_name);
+                formData.append('categoryid', categoryid);
+                formData.append('current_qty', current_qty);
+                formData.append('unit', unit);
+                formData.append('critical_level', critical_level);
+                formData.append('add_product', 1); // Backend flag
+
+                $.ajax({
+                    url: 'pages/products.php', // adjust if needed
+                    type: 'POST',
+                    data: formData,
+                    contentType: false,
+                    processData: false,
+                    success: function(response) {
+                        $("#main_content").html(response);
+                        $("#main_content").css('opacity', '1');
+                        $('#productModal').modal('hide');
+                        $('.modal-backdrop').remove();
+                    },
+                    error: function() {
+                        alert("Error occurred while adding the product.");
+                    }
+                });
+            }
+        }
+
+
+        function select_product(product_id) {
+            $.ajax({
+                url: 'pages/products_select.php',
+                type: "GET",
+                data: {
+                    product_id: product_id
+                },
+                dataType: 'json',
+                success: function(data) {
+                    $('#product_id_edit').val(data.product_id);
+                    $('#product_name_edit').val(data.product_name);
+                    $('#categoryid_edit').val(data.categoryid);
+                    $('#current_qty_edit').val(data.current_qty);
+                    $('#unit_edit').val(data.unit);
+                    $('#critical_level_edit').val(data.critical_level);
+                    $('#productEditModal').modal('show');
+                },
+                error: function() {
+                    alert("Failed to fetch product details.");
+                }
+            });
+        }
+
+        function edit_product() {
+            var product_id = $('#product_id_edit').val().trim();
+            var product_name = $('#product_name_edit').val().trim();
+            var categoryid = $('#categoryid_edit').val();
+            var current_qty = $('#current_qty_edit').val().trim();
+            var unit = $('#unit_edit').val().trim();
+            var critical_level = $('#critical_level_edit').val().trim();
+
+            // Basic validation
+            if (!product_name || !categoryid || !current_qty || !unit || !critical_level) {
+                alert("All fields are required.");
+                return;
+            }
+
+            if (isNaN(current_qty) || isNaN(critical_level) || current_qty < 0 || critical_level < 0) {
+                alert("Please enter valid numbers for quantity and critical level.");
+                return;
+            }
+
+            if (confirm("Are you sure you want to update this product?")) {
+                var formData = new FormData();
+                formData.append('product_id_edit', product_id);
+                formData.append('product_name_edit', product_name);
+                formData.append('categoryid_edit', categoryid);
+                formData.append('current_qty_edit', current_qty);
+                formData.append('unit_edit', unit);
+                formData.append('critical_level_edit', critical_level);
+                formData.append('edit_product', 1); // Backend flag
+
+                $.ajax({
+                    url: 'pages/products.php', // Make sure this path matches your backend
+                    type: 'POST',
+                    data: formData,
+                    contentType: false,
+                    processData: false,
+                    success: function(response) {
+                        $('#main_content').html(response); // Update main content
+                        $('#productEditModal').modal('hide');
+                        $('.modal-backdrop').remove();
+                    },
+                    error: function() {
+                        alert("An error occurred while updating the product.");
+                    }
+                });
+            }
+        }
+
+        function monitor_it() {
+            var monitor_date = document.getElementById('monitor_date').value;
+            var pen_number = document.getElementById('pen_number').value;
+            var symptom_id = document.getElementById('symptom_id').value;
+            var description = document.getElementById('description').value;
+            if(!monitor_date || !pen_number || !symptom_id){
+                alert('Please input monitor date, pen number and select symptom.');
+                return;
+            }
+            if (confirm("Are you sure you want to add this log?")) {
+                var formData = new FormData();
+                formData.append('monitor_date', monitor_date);
+                formData.append('pen_number', pen_number);
+                formData.append('symptom_id', symptom_id);
+                formData.append('description', description);
+                formData.append('add_log', 1); // Backend flag
+
+                $.ajax({
+                    url: 'pages/monitoring.php', // Make sure this path matches your backend
+                    type: 'POST',
+                    data: formData,
+                    contentType: false,
+                    processData: false,
+                    success: function(response) {
+                        $('#main_content').html(response); // Update main content
+                        // $('.modal-backdrop').remove();
+                    },
+                    error: function() {
+                        alert("An error occurred while updating the product.");
+                    }
+                });
+            }
+        }
     </script>
 </head>
 
@@ -318,6 +764,7 @@ if (isset($_SESSION['accountid'])) {
                 <a href="javascript:void(0);" onclick="ajax_fn('pages/notifications','main_content')"><i class="fas fa-bell me-2"></i> Notifications</a>
                 <a href="javascript:void(0);" onclick="ajax_fn('pages/user_management','main_content')"><i class="fas fa-users-cog me-2"></i> User Management</a>
                 <a href="javascript:void(0);" onclick="ajax_fn('pages/customers','main_content')"><i class="fas fa-address-book me-2"></i> Customers</a>
+                <a href="javascript:void(0);" onclick="ajax_fn('maintenance/maintenance','main_content')"><i class="fas fa-cogs me-2"></i> Maintenance</a>
             </nav>
 
             <div class="user-info pt-3">
