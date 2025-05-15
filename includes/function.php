@@ -172,6 +172,33 @@ function is_maintenance()
         }
     }
 }
+function is_blocked()
+{
+    global $db_connection;
+
+    if (!isset($_SESSION['accountid'])) {
+        // No logged-in user
+        header('Location: ../forbidden');
+        exit();
+    }
+
+    $accountid = (int) $_SESSION['accountid'];
+
+    $query = "SELECT is_blocked FROM tblaccounts WHERE accountid = $accountid LIMIT 1";
+    $result = mysqli_query($db_connection, $query);
+
+    if ($result && $row = mysqli_fetch_assoc($result)) {
+        if ((int)$row['is_blocked'] === 1) {
+            // User is blocked
+            header('Location: ../forbidden');
+            exit();
+        }
+    } else {
+        // Could not verify user, restrict access just to be safe
+        header('Location: ../forbidden');
+        exit();
+    }
+}
 
 
 function Audit($accountid, $activity, $description)

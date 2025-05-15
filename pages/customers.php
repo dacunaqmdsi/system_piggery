@@ -1,6 +1,5 @@
 <?php
-include('../includes/init.php'); // Make sure this includes the DB connection
-
+include('../includes/init.php'); is_blocked();
 if (isset($_POST['add_customer'])) {
     // Escape all user inputs to prevent SQL Injection
     $name = mysqli_real_escape_string($db_connection, $_POST['name']);

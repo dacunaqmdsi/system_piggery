@@ -1,4 +1,18 @@
-<?php include('../includes/init.php'); ?>
+<?php include('../includes/init.php'); is_blocked(); ?>
+<?php
+$_SESSION['tmp_sale'] = 'tmp_sale' . $_SESSION['accountid'];
+$result = mysqli_query($db_connection, 'DROP TABLE IF EXISTS ' . $_SESSION['tmp_sale'] . '') or die(mysqli_error($db_connection));
+$str = "CREATE TABLE " . $_SESSION['tmp_sale'] . " (
+	`id` int(11) NOT NULL AUTO_INCREMENT,
+	`inventory_id` INT(11) DEFAULT 0,
+	`qty` double DEFAULT 0,
+	`price` double DEFAULT 0,
+	primary key(`id`) ) 
+ENGINE=InnoDB DEFAULT CHARSET=latin1;";
+mysqli_query($db_connection, $str) or die(mysqli_error($db_connection));
+
+?>
+
 <div class="container-fluid ">
 
     <!-- Page Title -->
@@ -10,15 +24,24 @@
             <div class="row mb-4">
                 <div class="col-md-6 mb-3">
                     <label for="sale-date" class="form-label text-dark">Date</label>
-                    <input type="date" id="sale-date" class="form-control border-2" required style="border-color: #e5e7eb;">
+                    <input type="date" id="sale_date" class="form-control border-2" required style="border-color: #e5e7eb;">
                 </div>
                 <div class="col-md-6 mb-3">
                     <label for="customer-name" class="form-label text-dark">Customer Name</label>
-                    <select id="customer-name-select" class="form-select border-2" required style="border-color: #e5e7eb;">
+                    <!-- <select id="customer-name-select" class="form-select border-2" required style="border-color: #e5e7eb;">
                         <option value="" disabled selected>-- Select Customer --</option>
                         <option value="_guest_">Guest/Walk-in Customer</option>
+                    </select> -->
+                    <select id="customerid" class="form-select border-2" style="border-color: #e5e7eb;" required>
+                        <option value="" disabled selected>Select Customer</option>
+                        <option value="_guest_">Guest/Walk-in Customer</option>
+                        <?php
+                        $res = mysqli_query($db_connection, "SELECT customerid, name FROM tblcustomer ORDER BY name ASC");
+                        while ($row = mysqli_fetch_assoc($res)) {
+                            echo '<option value="' . $row['customerid'] . '">' . htmlspecialchars($row['name']) . '</option>';
+                        }
+                        ?>
                     </select>
-                    <input type="hidden" id="customer-name-hidden">
                 </div>
             </div>
 
@@ -30,29 +53,47 @@
                 <div class="row g-3 border-bottom pb-3 sale-item-row">
                     <div class="col-md-3">
                         <label class="form-label text-dark">Source Pen</label>
-                        <select class="form-select border-2 item-pen-select" onchange="handlePenSelection(this)" required style="border-color: #e5e7eb;">
+                        <!-- <select id="inventory_id" class="form-select border-2 item-pen-select" onchange="handlePenSelection(this)" required style="border-color: #e5e7eb;">
                             <option value="" disabled selected>-- Select Pen --</option>
+                        </select> -->
+                        <select id="customerid" class="form-select border-2 item-pen-select" style="border-color: #e5e7eb;" required>
+                            <option value="" disabled selected>-- Select Pen --</option>
+                            <?php
+                            // Get all pens and left join to get mother's pen if type is Piglet
+                            $res = mysqli_query($db_connection, "
+                                SELECT 
+                                    child.inventory_id,
+                                    child.pen_number,
+                                    child.pen_type,
+                                    mother.pen_number AS mother_pen_number
+                                FROM 
+                                    tblinventory AS child
+                                LEFT JOIN 
+                                    tblinventory AS mother ON child.mothers_pen = mother.inventory_id
+                                ORDER BY 
+                                    child.pen_number ASC
+                            ");
+
+                            while ($row = mysqli_fetch_assoc($res)) {
+                                $penLabel = ($row['pen_type'] === 'Piglet')
+                                    ? 'Piglet Pen (Mother Pen: ' . htmlspecialchars($row['mother_pen_number'] ?? 'N/A') . ')'
+                                    : htmlspecialchars($row['pen_number'] . ' (' . $row['pen_type'] . ')');
+
+                                echo '<option value="' . $row['inventory_id'] . '">' . $penLabel . '</option>';
+                            }
+                            ?>
                         </select>
+
+
                         <input type="hidden" class="item-pen-name">
-                    </div>
-                    <div class="col-md-3">
-                        <label class="form-label text-dark">Select Pig Type</label>
-                        <select class="form-select border-2 item-pig-type-select" onchange="updateItemDescription(this)" required style="border-color: #e5e7eb;">
-                            <option value="" disabled selected>-- Select Pen First --</option>
-                        </select>
-                        <input type="hidden" class="item-description">
-                    </div>
-                    <div class="col-md-3 other-description-container" style="display: none;">
-                        <label class="form-label text-dark">Specify Other Type</label>
-                        <input type="text" class="form-control border-2 item-other-description" placeholder="Enter custom type" style="border-color: #e5e7eb;">
                     </div>
                     <div class="col-md-1">
                         <label class="form-label text-dark">Qty</label>
-                        <input type="number" min="1" step="1" value="1" class="form-control border-2 item-quantity" required style="border-color: #e5e7eb;">
+                        <input id="qty" type="number" min="1" step="1" value="1" class="form-control border-2 item-quantity" required style="border-color: #e5e7eb;">
                     </div>
                     <div class="col-md-2">
                         <label class="form-label text-dark">Unit Price</label>
-                        <input type="number" min="0" step="0.01" value="0.00" class="form-control border-2 item-price" required style="border-color: #e5e7eb;">
+                        <input id="price" type="number" min="0" step="0.01" value="0.00" class="form-control border-2 item-price" required style="border-color: #e5e7eb;">
                     </div>
                     <div class="col-auto d-flex align-items-end">
                         <button type="button" onclick="removeSaleItem(this)" class="btn btn-danger px-3"><i class="fas fa-trash-alt"></i></button>
@@ -108,7 +149,7 @@
                         <th>Date</th>
                         <th>Customer</th>
                         <th>Total Amount</th>
-                        <th>Actions</th>
+                        <!-- <th>Actions</th> -->
                     </tr>
                 </thead>
                 <tbody id="sales-history-body">

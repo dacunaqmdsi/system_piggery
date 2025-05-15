@@ -1,4 +1,4 @@
-<?php include('../includes/init.php'); ?>
+<?php include('../includes/init.php'); is_blocked(); ?>
 <div class="container-fluid bg-light d-flex flex-column">
 
     <!-- Header -->

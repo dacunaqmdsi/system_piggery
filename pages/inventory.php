@@ -1,4 +1,123 @@
-<?php include('../includes/init.php'); ?>
+<?php include('../includes/init.php'); is_blocked(); ?>
+
+<?php
+if (isset($_POST['add_inventory'])) {
+    $pen_number = trim($_POST['pen_number']);
+    $pen_type = trim($_POST['pen_type']);
+    $mothers_pen = isset($_POST['mothers_pen']) ? trim($_POST['mothers_pen']) : null;
+    $count_ = intval($_POST['count_']);
+
+    // Basic validation
+    if (empty($pen_number) || empty($pen_type) || $count_ < 1) {
+        echo "Invalid input data.";
+        exit;
+    }
+
+    // Check if pen_number already exists
+    $checkStmt = $db_connection->prepare("SELECT COUNT(*) FROM tblinventory WHERE pen_number = ?");
+    $checkStmt->bind_param("s", $pen_number);
+    $checkStmt->execute();
+    $checkStmt->bind_result($existing);
+    $checkStmt->fetch();
+    $checkStmt->close();
+
+    if ($existing > 0) {
+        echo "<div class='alert alert-warning'>Pen number already exists. Please use a unique pen number.</div>";
+        exit;
+    }
+
+    // Insert new pen
+    $stmt = $db_connection->prepare("
+        INSERT INTO tblinventory (pen_number, pen_type, mothers_pen, count_)
+        VALUES (?, ?, ?, ?)
+    ");
+
+    if ($stmt) {
+        $stmt->bind_param("sssi", $pen_number, $pen_type, $mothers_pen, $count_);
+        if ($stmt->execute()) {
+            echo "<div class='alert alert-success'>Inventory successfully added.</div>";
+        } else {
+            echo "<div class='alert alert-danger'>Failed to add inventory. Please try again.</div>";
+        }
+        $stmt->close();
+    } else {
+        echo "<div class='alert alert-danger'>Database error. Please contact the administrator.</div>";
+    }
+}
+
+if (isset($_POST['add_birth'])) {
+    $mothers_pen_id = intval($_POST['mothers_pen_id']);
+    $dob = trim($_POST['dob']);
+    $total_piglets = intval($_POST['total_piglets']);
+    $deaths = intval($_POST['deaths']);
+    $alive = intval($_POST['alive']);
+
+    if (empty($mothers_pen_id) || empty($dob) || $total_piglets < 1) {
+        echo "<div class='alert alert-warning'>Missing or invalid input values.</div>";
+        exit;
+    }
+
+    // Prepare insert statement
+    $stmt = $db_connection->prepare("
+        INSERT INTO tblbirth (pen_number, dob, total_piglets, deaths, alive)
+        VALUES (?, ?, ?, ?, ?)
+    ");
+
+    if ($stmt) {
+        $stmt->bind_param("isiii", $mothers_pen_id, $dob, $total_piglets, $deaths, $alive);
+
+        if ($stmt->execute()) {
+            // Update inventory only after successful insert
+            $update = mysqli_query(
+                $db_connection,
+                "UPDATE tblinventory SET count_ = count_ + $alive WHERE mothers_pen = $mothers_pen_id"
+            );
+
+            if ($update) {
+                echo "<div class='alert alert-success'>Birth record successfully added and inventory updated.</div>";
+            } else {
+                echo "<div class='alert alert-warning'>Birth record added, but inventory update failed.</div>";
+            }
+        } else {
+            echo "<div class='alert alert-danger'>Failed to add birth record. Try again.</div>";
+        }
+
+        $stmt->close();
+    } else {
+        echo "<div class='alert alert-danger'>Database error occurred while preparing statement.</div>";
+    }
+}
+
+
+if (isset($_POST['delete_birth'])) {
+    $birth_id = intval($_POST['id']); // Sanitize input
+
+    // First, fetch the alive count and pen_number from the birth record
+    $result = mysqli_query($db_connection, "SELECT alive, pen_number FROM tblbirth WHERE birth_id = $birth_id");
+
+    if ($row = mysqli_fetch_assoc($result)) {
+        $alive = intval($row['alive']);
+        $pen_number = intval($row['pen_number']);
+
+        // Delete the birth record
+        $delete_query = "DELETE FROM tblbirth WHERE birth_id = $birth_id";
+        if (mysqli_query($db_connection, $delete_query)) {
+            // Update the inventory count
+            $update_query = "UPDATE tblinventory SET count_ = count_ - $alive WHERE mothers_pen = $pen_number";
+            mysqli_query($db_connection, $update_query);
+
+            echo "<div class='alert alert-success'>Birth record deleted and inventory updated.</div>";
+        } else {
+            echo "<div class='alert alert-danger'>Failed to delete birth record.</div>";
+        }
+    } else {
+        echo "<div class='alert alert-warning'>Birth record not found.</div>";
+    }
+}
+
+?>
+
+
 <div class="container-fluid">
 
     <!-- Header + Buttons -->
@@ -13,6 +132,11 @@
             </button>
         </div>
     </div>
+    <?php
+
+
+
+    ?>
 
     <!-- Inventory Tables -->
     <div class="row g-4 mb-5">
@@ -29,9 +153,15 @@
                             </tr>
                         </thead>
                         <tbody id="sow-table-body">
-                            <tr>
-                                <td colspan="2" class="text-center text-muted py-4">No sow pens added yet.</td>
-                            </tr>
+                            <?php
+                            $rs = mysqli_query($db_connection, 'select inventory_id, pen_number, count_, pen_type from tblinventory where pen_type=\'Sow\' ');
+                            while ($rw = mysqli_fetch_array($rs)) {
+                                echo '<tr>
+                                    <td>' . $rw['pen_number'] . '</td>
+                                    <td>' . $rw['count_'] . '</td>
+                                </tr>';
+                            }
+                            ?>
                         </tbody>
                     </table>
                 </div>
@@ -51,9 +181,15 @@
                             </tr>
                         </thead>
                         <tbody id="boar-table-body">
-                            <tr>
-                                <td colspan="2" class="text-center text-muted py-4">No boar pens added yet.</td>
-                            </tr>
+                            <?php
+                            $rs = mysqli_query($db_connection, 'select inventory_id, pen_number, count_, pen_type from tblinventory where pen_type=\'Boar\' ');
+                            while ($rw = mysqli_fetch_array($rs)) {
+                                echo '<tr>
+                                    <td>' . $rw['pen_number'] . '</td>
+                                    <td>' . $rw['count_'] . '</td>
+                                </tr>';
+                            }
+                            ?>
                         </tbody>
                     </table>
                 </div>
@@ -73,9 +209,15 @@
                             </tr>
                         </thead>
                         <tbody id="fattener-table-body">
-                            <tr>
-                                <td colspan="2" class="text-center text-muted py-4">No fattener pens added yet.</td>
-                            </tr>
+                            <?php
+                            $rs = mysqli_query($db_connection, 'select inventory_id, pen_number, count_, pen_type from tblinventory where pen_type=\'Fattener\' ');
+                            while ($rw = mysqli_fetch_array($rs)) {
+                                echo '<tr>
+                                    <td>' . $rw['pen_number'] . '</td>
+                                    <td>' . $rw['count_'] . '</td>
+                                </tr>';
+                            }
+                            ?>
                         </tbody>
                     </table>
                 </div>
@@ -96,9 +238,26 @@
                             </tr>
                         </thead>
                         <tbody id="piglet-table-body">
-                            <tr>
-                                <td colspan="3" class="text-center text-muted py-4">No piglet pens added yet.</td>
-                            </tr>
+                            <?php
+                            $rs = mysqli_query($db_connection, "
+                                SELECT 
+                                    piglet.pen_number AS piglet_pen,
+                                    mother.pen_number AS mother_pen,
+                                    piglet.count_
+                                FROM tblinventory AS piglet
+                                LEFT JOIN tblinventory AS mother ON piglet.mothers_pen = mother.inventory_id
+                                WHERE piglet.pen_type = 'Piglet'
+                            ");
+
+                            while ($rw = mysqli_fetch_array($rs)) {
+                                echo '<tr>
+                                    <td>' . htmlspecialchars($rw['piglet_pen']) . '</td>
+                                    <td>' . htmlspecialchars($rw['mother_pen']) . '</td>
+                                    <td>' . htmlspecialchars($rw['count_']) . '</td>
+                                </tr>';
+                            }
+                            ?>
+
                         </tbody>
                     </table>
                 </div>
@@ -122,9 +281,36 @@
                     </tr>
                 </thead>
                 <tbody id="birthing-records-body">
-                    <tr>
-                        <td colspan="6" class="text-center text-muted py-4">No birthing records found.</td>
-                    </tr>
+                    <?php
+                    // Fetch and display birthing records
+                    $query = "SELECT b.birth_id, b.dob, b.total_piglets, b.deaths, b.alive, i.pen_number 
+          FROM tblbirth b 
+          LEFT JOIN tblinventory i ON b.pen_number = i.inventory_id 
+          ORDER BY b.dob DESC";
+
+                    $result = $db_connection->query($query);
+
+                    if ($result->num_rows > 0):
+                        while ($row = $result->fetch_assoc()):
+                    ?>
+                            <tr>
+                                <td><?= htmlspecialchars($row['dob']) ?></td>
+                                <td><?= htmlspecialchars($row['pen_number']) ?></td>
+                                <td><?= intval($row['total_piglets']) ?></td>
+                                <td><?= intval($row['deaths']) ?></td>
+                                <td><?= intval($row['alive']) ?></td>
+                                <td>
+                                    <button class="btn btn-sm btn-danger" onclick="deleteBirth(<?= $row['birth_id'] ?>)">Delete</button>
+                                </td>
+                            </tr>
+                        <?php
+                        endwhile;
+                    else:
+                        ?>
+                        <tr>
+                            <td colspan="6" class="text-center text-muted py-4">No birthing records found.</td>
+                        </tr>
+                    <?php endif; ?>
                 </tbody>
             </table>
         </div>
@@ -139,49 +325,48 @@
                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
                 <div class="modal-body px-4 py-3">
-                    <form id="add-pen-form" onsubmit="handleAddPenSubmit(event)">
+                    <div class="mb-3">
+                        <label for="pen-number" class="form-label text-dark">Pen Number</label>
+                        <input id="pen_number" type="text" class="form-control border-2" placeholder="e.g., S1, B2, F10, P1-Litter" required>
+                        <div class="form-text">Use a unique identifier for the pen.</div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="pen-type" class="form-label text-dark">Pen Type</label>
+                        <select id="pen_type" class="form-select border-2" required onchange="togglePigletOptions()">
+                            <option value="" disabled selected>Select pen type</option>
+                            <option value="Sow">Sow</option>
+                            <option value="Boar">Boar</option>
+                            <option value="Fattener">Fattener</option>
+                            <option value="Piglet">Piglet</option>
+                        </select>
+                    </div>
+
+                    <div id="piglet-options" style="display: none;">
                         <div class="mb-3">
-                            <label for="pen-number" class="form-label text-dark">Pen Number</label>
-                            <input id="pen-number" type="text" class="form-control border-2" placeholder="e.g., S1, B2, F10, P1-Litter" required>
-                            <div class="form-text">Use a unique identifier for the pen.</div>
-                        </div>
-                        <div class="mb-3">
-                            <label for="pen-type" class="form-label text-dark">Pen Type</label>
-                            <select id="pen-type" class="form-select border-2" required>
-                                <option value="" disabled selected>Select pen type</option>
-                                <option value="Sow">Sow</option>
-                                <option value="Boar">Boar</option>
-                                <option value="Fattener">Fattener</option>
-                                <option value="Piglet">Piglet</option>
+                            <label for="mother-sow-pen" class="form-label text-dark">Mother Sow Pen</label>
+                            <select id="mothers_pen" class="form-select">
+                                <option value="" disabled selected>Select mother sow's pen</option>
+                                <?php
+                                $res = mysqli_query($db_connection, "SELECT inventory_id, pen_number FROM tblinventory WHERE pen_type='Sow'");
+                                while ($row = mysqli_fetch_assoc($res)) {
+                                    echo '<option value="' . htmlspecialchars($row['inventory_id']) . '">' . htmlspecialchars($row['pen_number']) . '</option>';
+                                }
+                                ?>
                             </select>
                         </div>
+                    </div>
 
-                        <div id="piglet-options" >
-                            <div class="mb-3">
-                                <label for="mother-sow-pen" class="form-label text-dark">Mother Sow Pen</label>
-                                <select id="mother-sow-pen" class="form-select">
-                                    <option value="" disabled selected>Select mother sow's pen</option>
-                                </select>
-                            </div>
-                            <div class="mb-3">
-                                <label for="piglet-count" class="form-label text-dark">Number of Piglets</label>
-                                <input id="piglet-count" type="number" class="form-control" min="0">
-                            </div>
-                        </div>
-                        <!-- id="sow-boar-fattener-options" class="d-none" -->
-                        <div>
-                            <div class="mb-3">
-                                <label for="animal-count" class="form-label text-dark">Number of Animals</label>
-                                <input id="animal-count" type="number" class="form-control" value="1" min="0">
-                            </div>
-                        </div>
+                    <div class="mb-3">
+                        <label for="animal-count" class="form-label text-dark">Count of Animals</label>
+                        <input id="count_" type="number" class="form-control" value="1" min="0">
+                    </div>
 
-                        <p id="add-pen-modal-error" class="text-danger small d-none mt-3"></p>
-                        <div class="d-flex justify-content-end gap-2 pt-3">
-                            <button type="button" class="btn btn-light text-dark" data-bs-dismiss="modal">Cancel</button>
-                            <button type="submit" class="btn text-white" style="background-color: #ec4899;">Add Pen</button>
-                        </div>
-                    </form>
+                    <p id="add-pen-modal-error" class="text-danger small d-none mt-3"></p>
+                    <div class="d-flex justify-content-end gap-2 pt-3">
+                        <button type="button" class="btn btn-light text-dark" data-bs-dismiss="modal">Cancel</button>
+                        <button onclick="pen_inventory()" class="btn text-white" style="background-color: #ec4899;">Add Pen</button>
+                    </div>
                 </div>
             </div>
         </div>
@@ -196,36 +381,43 @@
                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
                 <div class="modal-body px-4 py-3">
-                    <form id="record-birth-form" onsubmit="handleRecordBirthSubmit(event)">
-                        <div class="mb-3">
-                            <label for="birth-mother-sow-pen" class="form-label text-dark">Mother Sow Pen</label>
-                            <select id="birth-mother-sow-pen" class="form-select border-2" required>
-                                <option value="" disabled selected>Select mother sow's pen</option>
-                            </select>
-                        </div>
-                        <div class="mb-3">
-                            <label for="birth-date" class="form-label text-dark">Date of Birth</label>
-                            <input id="birth-date" type="date" class="form-control border-2" required>
-                        </div>
-                        <div class="mb-3">
-                            <label for="birth-total-born" class="form-label text-dark">Total Piglets Born</label>
-                            <input id="birth-total-born" type="number" min="0" class="form-control border-2" required>
-                        </div>
-                        <div class="mb-3">
-                            <label for="birth-deaths" class="form-label text-dark">Number of Deaths</label>
-                            <input id="birth-deaths" type="number" value="0" min="0" class="form-control border-2" required>
-                        </div>
-                        <div class="mb-3">
-                            <label for="birth-alive" class="form-label text-dark">Number Alive</label>
-                            <input id="birth-alive" type="number" class="form-control border-2" readonly placeholder="Calculated automatically">
-                        </div>
+                    <div class="mb-3">
+                        <label for="birth-mother-sow-pen" class="form-label text-dark">Mother Sow Pen</label>
+                        <select id="mothers_pen_id" class="form-select">
+                            <option value="" disabled selected>Select mother sow's pen</option>
+                            <?php
+                            $res = mysqli_query($db_connection, "SELECT inventory_id, pen_number FROM tblinventory WHERE pen_type='Sow'");
+                            while ($row = mysqli_fetch_assoc($res)) {
+                                echo '<option value="' . htmlspecialchars($row['inventory_id']) . '">' . htmlspecialchars($row['pen_number']) . '</option>';
+                            }
+                            ?>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label for="birth-date" class="form-label text-dark">Date of Birth</label>
+                        <input id="dob" type="date" class="form-control border-2" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="birth-total-born" class="form-label text-dark">Total Piglets Born</label>
+                        <!-- <input id="total_piglets" type="number" min="0" class="form-control border-2" required> -->
+                        <input id="total_piglets" type="number" min="0" class="form-control border-2" required oninput="calculateAlive()">
 
-                        <p id="record-birth-modal-error" class="text-danger small d-none mt-3"></p>
-                        <div class="d-flex justify-content-end gap-2 pt-3">
-                            <button type="button" class="btn btn-light text-dark" data-bs-dismiss="modal">Cancel</button>
-                            <button type="submit" class="btn text-white" style="background-color: #ec4899;">Record Birth</button>
-                        </div>
-                    </form>
+                    </div>
+                    <div class="mb-3">
+                        <label for="birth-deaths" class="form-label text-dark">Number of Deaths</label>
+                        <!-- <input id="deaths" type="number" value="0" min="0" class="form-control border-2" required> -->
+                        <input id="deaths" type="number" value="0" min="0" class="form-control border-2" required oninput="calculateAlive()">
+                    </div>
+                    <div class="mb-3">
+                        <label for="birth-alive" class="form-label text-dark">Number Alive</label>
+                        <input id="alive" type="number" class="form-control border-2" readonly placeholder="Calculated automatically">
+                    </div>
+
+                    <p id="record-birth-modal-error" class="text-danger small d-none mt-3"></p>
+                    <div class="d-flex justify-content-end gap-2 pt-3">
+                        <button type="button" class="btn btn-light text-dark" data-bs-dismiss="modal">Cancel</button>
+                        <button onclick="add_birth();" class="btn text-white" style="background-color: #ec4899;">Record Birth</button>
+                    </div>
                 </div>
             </div>
         </div>

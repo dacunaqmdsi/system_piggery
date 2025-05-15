@@ -230,6 +230,7 @@ if (isset($_SESSION['accountid'])) {
             var username = document.getElementById('username_edit').value.trim();
             var account_password = document.getElementById('account_password_edit').value.trim();
             var account_type = document.getElementById('account_type_edit').value;
+            var is_blocked_edit = document.getElementById('is_blocked_edit').value;
 
             if (!username) {
                 alert('Username is required');
@@ -240,12 +241,17 @@ if (isset($_SESSION['accountid'])) {
                 alert('Account type is required');
                 return;
             }
+            if (!is_blocked_edit) {
+                alert('Account status is required');
+                return;
+            }
 
             if (confirm("Are you sure you want to update this user?")) {
                 var formData = new FormData();
                 formData.append('accountid', accountid);
                 formData.append('username', username);
                 formData.append('account_type', account_type);
+                formData.append('is_blocked_edit', is_blocked_edit);
                 formData.append('update_user', 1);
 
                 if (account_password !== "") {
@@ -285,6 +291,7 @@ if (isset($_SESSION['accountid'])) {
                 dataType: 'json',
                 success: function(data) {
                     $('#username_edit').val(data.username);
+                    $('#is_blocked_edit').val(data.is_blocked);
                     $('#account_type_edit').val(data.account_type);
                     $('#accountid_edit').val(data.accountid);
                     $('#account_password_edit').val(data.account_password);
@@ -711,7 +718,7 @@ if (isset($_SESSION['accountid'])) {
             var pen_number = document.getElementById('pen_number').value;
             var symptom_id = document.getElementById('symptom_id').value;
             var description = document.getElementById('description').value;
-            if(!monitor_date || !pen_number || !symptom_id){
+            if (!monitor_date || !pen_number || !symptom_id) {
                 alert('Please input monitor date, pen number and select symptom.');
                 return;
             }
@@ -735,6 +742,222 @@ if (isset($_SESSION['accountid'])) {
                     },
                     error: function() {
                         alert("An error occurred while updating the product.");
+                    }
+                });
+            }
+        }
+
+
+        function togglePigletOptions() {
+            const penType = document.getElementById('pen_type').value;
+            const pigletOptions = document.getElementById('piglet-options');
+
+            if (penType === 'Piglet') {
+                pigletOptions.style.display = 'block';
+            } else {
+                pigletOptions.style.display = 'none';
+                document.getElementById('mothers_pen').selectedIndex = 0;
+            }
+        }
+
+        function pen_inventory() {
+            const pen_number = document.getElementById('pen_number').value.trim();
+            const pen_type = document.getElementById('pen_type').value;
+            const mothers_pen = document.getElementById('mothers_pen')?.value || '';
+            const count_ = document.getElementById('count_').value;
+
+            if (!pen_number) {
+                alert("Please input pen number.");
+                return;
+            }
+
+            if (!pen_type) {
+                alert("Please select a pen type.");
+                return;
+            }
+
+            // If Piglet is selected, mother_sow_pen must be selected too
+            if (pen_type === 'Piglet' && !mothers_pen) {
+                alert("Please select a mother sow pen for the piglet.");
+                return;
+            }
+
+            if (!count_ || parseInt(count_) < 1) {
+                alert("Please enter a valid animal count.");
+                return;
+            }
+
+            if (confirm("Are you sure you want to add this inventory?")) {
+                const formData = new FormData();
+                formData.append('pen_number', pen_number);
+                formData.append('pen_type', pen_type);
+                formData.append('mothers_pen', mothers_pen);
+                formData.append('count_', count_);
+                formData.append('add_inventory', 1); // Backend flag
+
+                $.ajax({
+                    url: 'pages/inventory.php',
+                    type: 'POST',
+                    data: formData,
+                    contentType: false,
+                    processData: false,
+                    success: function(response) {
+                        $('#main_content').html(response);
+                        $('#addPenModal').modal('hide'); // Hide modal on success
+                        $('.modal-backdrop').remove();
+                    },
+                    error: function() {
+                        alert("An error occurred while updating the inventory.");
+                    }
+                });
+            }
+        }
+
+        function add_birth() {
+            const mothers_pen_id = document.getElementById('mothers_pen_id').value;
+            const dob = document.getElementById('dob').value;
+            const total_piglets = document.getElementById('total_piglets').value;
+            const deaths = document.getElementById('deaths').value;
+            const alive = document.getElementById('alive').value;
+
+            if (!mothers_pen_id || !dob || !total_piglets) {
+                alert("Please fill out all required fields.");
+                return;
+            }
+
+            if (confirm("Are you sure you want to record this?")) {
+                const formData = new FormData();
+                formData.append('mothers_pen_id', mothers_pen_id);
+                formData.append('dob', dob);
+                formData.append('total_piglets', total_piglets);
+                formData.append('deaths', deaths);
+                formData.append('alive', alive);
+                formData.append('add_birth', 1); // Backend flag
+
+                $.ajax({
+                    url: 'pages/inventory.php',
+                    type: 'POST',
+                    data: formData,
+                    contentType: false,
+                    processData: false,
+                    success: function(response) {
+                        $('#main_content').html(response);
+                        $('#addPenModal').modal('hide'); // Hide modal on success
+                        $('.modal-backdrop').remove();
+                    },
+                    error: function() {
+                        alert("An error occurred while updating the inventory.");
+                    }
+                });
+            }
+        }
+
+        function calculateAlive() {
+            const total = parseInt(document.getElementById('total_piglets').value) || 0;
+            const deaths = parseInt(document.getElementById('deaths').value) || 0;
+            const alive = Math.max(total - deaths, 0); // Avoid negative values
+            document.getElementById('alive').value = alive;
+        }
+
+        function deleteBirth(id) {
+            if (confirm("Are you sure you want to delete this birthing record?")) {
+                const formData = new FormData();
+                formData.append('delete_birth', 1); // flag for backend
+                formData.append('id', id);
+
+                $.ajax({
+                    url: 'pages/inventory.php', // adjust if needed
+                    type: 'POST',
+                    data: formData,
+                    contentType: false,
+                    processData: false,
+                    success: function(response) {
+                        $('#main_content').html(response); // reload main content
+                    },
+                    error: function() {
+                        alert("An error occurred while deleting the birthing record.");
+                    }
+                });
+            }
+        }
+
+        function process_sale() {
+            sale_date
+            customerid
+            inventory_id
+            qty
+            price
+        }
+
+
+
+
+
+        function add_edit_category(categoryid = null) {
+            var category = document.getElementById('category').value.trim();
+            if (!category) {
+                alert("Please input category");
+                return;
+            }
+
+            if (confirm(categoryid ? "Update this category?" : "Create this category?")) {
+                var formData = new FormData();
+                formData.append('category', category);
+                if (categoryid) {
+                    formData.append('edit_category', 1);
+                    formData.append('categoryid', categoryid);
+                } else {
+                    formData.append('add_category', 1);
+                }
+
+                $.ajax({
+                    url: 'maintenance/category.php',
+                    type: "POST",
+                    data: formData,
+                    contentType: false,
+                    processData: false,
+                    success: function(data) {
+                        $("#tmp_content").html(data);
+                        $("#tmp_content").css('opacity', '1');
+                        document.getElementById("category").value = "";
+                    },
+                    error: function() {
+                        alert("Error occurred while saving the category.");
+                    }
+                });
+            }
+        }
+
+        function add_edit_symptom(symptom_id = null) {
+            const symptom = document.getElementById('symptom').value.trim();
+            if (!symptom) {
+                alert("Please input a symptom.");
+                return;
+            }
+
+            const confirmMsg = symptom_id ? "Update this symptom?" : "Create this symptom?";
+            if (confirm(confirmMsg)) {
+                const formData = new FormData();
+                formData.append('symptom', symptom);
+                if (symptom_id) {
+                    formData.append('edit_symptom', 1);
+                    formData.append('symptom_id', symptom_id);
+                } else {
+                    formData.append('add_symptom', 1);
+                }
+
+                $.ajax({
+                    url: 'maintenance/symptom.php',
+                    type: 'POST',
+                    data: formData,
+                    contentType: false,
+                    processData: false,
+                    success: function(data) {
+                        $('#tmp_content').html(data).css('opacity', '1');
+                        document.getElementById('symptom').value = '';
+                    },
+                    error: function() {
+                        alert("An error occurred while saving the symptom.");
                     }
                 });
             }

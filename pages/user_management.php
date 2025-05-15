@@ -1,4 +1,4 @@
-<?php include('../includes/init.php'); ?>
+<?php include('../includes/init.php'); is_blocked(); ?>
 <?php
 if (isset($_POST['add_user'])) {
     $username = escape_str($db_connection, $_POST['username']);
@@ -20,9 +20,11 @@ if (isset($_POST['update_user'])) {
     $accountid = escape_str($db_connection, $_POST['accountid']);
     $username = escape_str($db_connection, $_POST['username']);
     $account_type = escape_str($db_connection, $_POST['account_type']);
+    $is_blocked_edit = escape_str($db_connection, $_POST['is_blocked_edit']);
 
     $query = "UPDATE tblaccounts SET 
                 username = '$username',
+                is_blocked = '$is_blocked_edit',
                 account_type = '$account_type'";
 
     if (!empty($_POST['account_password'])) {
@@ -58,6 +60,7 @@ if (isset($_POST['update_user'])) {
                 <tr>
                     <th>Username</th>
                     <th>Account Type</th>
+                    <th>Status</th>
                     <th class="text-center">Actions</th>
                 </tr>
             </thead>
@@ -68,6 +71,8 @@ if (isset($_POST['update_user'])) {
                     echo '<tr>
                         <td>' . htmlspecialchars($rw['username']) . '</td>
                         <td>' . htmlspecialchars($rw['account_type']) . '</td>
+                     <td>' . ($rw['is_blocked'] == 0 ? 'Active' : 'Blocked') . '</td>
+
                         <td>';
                     echo '<a style="text-decoration: none" href="javascript:void(0);" onclick="select_user(' . $rw['accountid'] . ');" data-bs-toggle="modal" data-bs-target="#userEditModal">Edit</a>';
                     echo '</td>
@@ -148,6 +153,15 @@ if (isset($_POST['update_user'])) {
                         <option value="" disabled selected>Select account type</option>
                         <option value="Farm Owner">Farm Owner</option>
                         <option value="Care Taker">Care Taker</option>
+                    </select>
+                </div>
+                <div class="mb-3">
+                    <label for="modal-account-type" class="form-label text-dark">Status</label>
+                    <select id="is_blocked_edit" class="form-select border-2"
+                        style="border-color: #e5e7eb;" required>
+                        <option value="" disabled selected>Select Status</option>
+                        <option value="0">Active</option>
+                        <option value="1">Blocked</option>
                     </select>
                 </div>
                 <div class="d-flex justify-content-end gap-2 pt-3">
