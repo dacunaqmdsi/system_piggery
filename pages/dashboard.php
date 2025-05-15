@@ -1,4 +1,5 @@
-<?php include('../includes/init.php'); is_blocked(); ?>
+<?php include('../includes/init.php');
+is_blocked(); ?>
 <div class="container-fluid py-4 bg-light">
     <h1 class="h3 fw-bold text-dark mb-4">Farm Overview Dashboard</h1>
 

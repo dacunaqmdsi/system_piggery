@@ -881,17 +881,133 @@ if (isset($_SESSION['accountid'])) {
             }
         }
 
-        function process_sale() {
-            sale_date
-            customerid
-            inventory_id
-            qty
-            price
+        function filterSalesHistory() {
+            const input = document.getElementById('sales-search-input');
+            const filter = input.value.toUpperCase();
+            const tbody = document.getElementById('sales-history-body');
+            const rows = tbody.getElementsByTagName('tr');
+
+            for (let i = 0; i < rows.length; i++) {
+                const cols = rows[i].getElementsByTagName('td');
+                let match = false;
+
+                for (let j = 0; j < cols.length - 1; j++) { // exclude action column
+                    const cell = cols[j];
+                    if (cell) {
+                        const text = cell.textContent || cell.innerText;
+                        if (text.toUpperCase().indexOf(filter) > -1) {
+                            match = true;
+                            break;
+                        }
+                    }
+                }
+
+                rows[i].style.display = match ? '' : 'none';
+            }
         }
 
+        function process_sale() {
+            const sale_date = document.getElementById('sale_date').value;
+            const customerid = document.getElementById('customerid').value;
 
+            if (!sale_date) {
+                alert('Please select date.');
+                return;
+            }
+            if (!customerid) {
+                alert('Please select customer.');
+                return;
+            }
 
+            const items = document.querySelectorAll('.sale-item-row');
+            if (items.length === 0) {
+                alert("Please add at least one sale item.");
+                return;
+            }
 
+            const formData = new FormData();
+            formData.append('sale_date', sale_date);
+            formData.append('customerid', customerid);
+            formData.append('add_sales', 1); // backend flag
+
+            let hasError = false;
+
+            items.forEach((row, index) => {
+                const inventory_id = row.querySelector('.item-pen-select').value;
+                const qty = row.querySelector('.item-quantity').value;
+                const price = row.querySelector('.item-price').value;
+
+                if (!inventory_id || qty <= 0 || price < 0) {
+                    alert(`Invalid entry in row ${index + 1}.`);
+                    hasError = true;
+                    return;
+                }
+
+                formData.append('inventory_id[]', inventory_id);
+                formData.append('qty[]', qty);
+                formData.append('price[]', price);
+            });
+
+            if (hasError) return;
+
+            if (confirm("Are you sure you want to process this?")) {
+                $.ajax({
+                    url: 'pages/sales.php',
+                    type: 'POST',
+                    data: formData,
+                    contentType: false,
+                    processData: false,
+                    success: function(response) {
+                        $('#main_content').html(response);
+                    },
+                    error: function() {
+                        alert("An error occurred while updating the inventory.");
+                    }
+                });
+            }
+        }
+
+        function addSaleItem() {
+            const container = document.getElementById('sale-items-container');
+            const firstRow = container.querySelector('.sale-item-row');
+            const clone = firstRow.cloneNode(true);
+
+            clone.querySelectorAll('input').forEach(input => {
+                input.value = input.type === 'number' ? (input.classList.contains('item-quantity') ? 1 : 0.00) : '';
+            });
+            clone.querySelector('select').selectedIndex = 0;
+
+            container.appendChild(clone);
+            updateGrandTotal();
+        }
+
+        function removeSaleItem(button) {
+            const row = button.closest('.sale-item-row');
+            const container = document.getElementById('sale-items-container');
+            if (container.querySelectorAll('.sale-item-row').length > 1) {
+                row.remove();
+                updateGrandTotal();
+            } else {
+                alert("At least one item is required.");
+            }
+        }
+
+        function updateGrandTotal() {
+            let total = 0;
+            document.querySelectorAll('.sale-item-row').forEach(row => {
+                const qty = parseFloat(row.querySelector('.item-quantity').value) || 0;
+                const price = parseFloat(row.querySelector('.item-price').value) || 0;
+                total += qty * price;
+            });
+            document.getElementById('grand-total').innerText = '₱' + total.toFixed(2);
+        }
+
+        // Auto-update grand total when quantity or price changes
+        document.addEventListener('input', function(e) {
+            if (e.target.classList.contains('item-quantity') || e.target.classList.contains('item-price')) {
+                updateGrandTotal();
+            }
+        });
 
         function add_edit_category(categoryid = null) {
             var category = document.getElementById('category').value.trim();
@@ -977,17 +1093,24 @@ if (isset($_SESSION['accountid'])) {
             </div>
 
             <nav>
-                <a href="javascript:void(0);" onclick="location.reload();"><i class="fas fa-tachometer-alt me-2"></i> Dashboard</a>
-                <a href="javascript:void(0);" onclick="ajax_fn('pages/inventory','main_content')"><i class="fas fa-boxes me-2"></i> Pig Inventory</a>
-                <a href="javascript:void(0);" onclick="ajax_fn('pages/products','main_content')"><i class="fas fa-shopping-basket me-2"></i> Products</a>
-                <a href="javascript:void(0);" onclick="ajax_fn('pages/sales','main_content')"><i class="fas fa-dollar-sign me-2"></i> Sales</a>
-                <a href="javascript:void(0);" onclick="ajax_fn('pages/expenses','main_content')"><i class="fas fa-receipt me-2"></i> Expenses</a>
-                <a href="javascript:void(0);" onclick="ajax_fn('pages/monitoring','main_content')"><i class="fas fa-clipboard-list me-2"></i> Daily Monitoring</a>
-                <a href="javascript:void(0);" onclick="ajax_fn('pages/reports','main_content')"><i class="fas fa-chart-bar me-2"></i> Reports</a>
-                <a href="javascript:void(0);" onclick="ajax_fn('pages/notifications','main_content')"><i class="fas fa-bell me-2"></i> Notifications</a>
-                <a href="javascript:void(0);" onclick="ajax_fn('pages/user_management','main_content')"><i class="fas fa-users-cog me-2"></i> User Management</a>
-                <a href="javascript:void(0);" onclick="ajax_fn('pages/customers','main_content')"><i class="fas fa-address-book me-2"></i> Customers</a>
-                <a href="javascript:void(0);" onclick="ajax_fn('maintenance/maintenance','main_content')"><i class="fas fa-cogs me-2"></i> Maintenance</a>
+                <?php if ($_SESSION['account_type'] == 'Farm Owner') { ?>
+                    <a href="javascript:void(0);" onclick="location.reload();"><i class="fas fa-tachometer-alt me-2"></i> Dashboard</a>
+                    <a href="javascript:void(0);" onclick="ajax_fn('pages/inventory','main_content')"><i class="fas fa-boxes me-2"></i> Pig Inventory</a>
+                    <a href="javascript:void(0);" onclick="ajax_fn('pages/products','main_content')"><i class="fas fa-shopping-basket me-2"></i> Products</a>
+                    <a href="javascript:void(0);" onclick="ajax_fn('pages/sales','main_content')"><i class="fas fa-dollar-sign me-2"></i> Sales</a>
+                    <a href="javascript:void(0);" onclick="ajax_fn('pages/expenses','main_content')"><i class="fas fa-receipt me-2"></i> Expenses</a>
+                    <a href="javascript:void(0);" onclick="ajax_fn('pages/monitoring','main_content')"><i class="fas fa-clipboard-list me-2"></i> Daily Monitoring</a>
+                    <a href="javascript:void(0);" onclick="ajax_fn('pages/reports','main_content')"><i class="fas fa-chart-bar me-2"></i> Reports</a>
+                    <a href="javascript:void(0);" onclick="ajax_fn('pages/notifications','main_content')"><i class="fas fa-bell me-2"></i> Notifications</a>
+                    <a href="javascript:void(0);" onclick="ajax_fn('pages/user_management','main_content')"><i class="fas fa-users-cog me-2"></i> User Management</a>
+                    <a href="javascript:void(0);" onclick="ajax_fn('pages/customers','main_content')"><i class="fas fa-address-book me-2"></i> Customers</a>
+                    <a href="javascript:void(0);" onclick="ajax_fn('maintenance/maintenance','main_content')"><i class="fas fa-cogs me-2"></i> Maintenance</a>
+                <?php } else { ?>
+                    <a href="javascript:void(0);" onclick="location.reload();"><i class="fas fa-tachometer-alt me-2"></i> Dashboard</a>
+                    <a href="javascript:void(0);" onclick="ajax_fn('pages/inventory','main_content')"><i class="fas fa-boxes me-2"></i> Pig Inventory</a>
+                    <a href="javascript:void(0);" onclick="ajax_fn('pages/monitoring','main_content')"><i class="fas fa-clipboard-list me-2"></i> Daily Monitoring</a>
+                    <a href="javascript:void(0);" onclick="ajax_fn('pages/reports','main_content')"><i class="fas fa-chart-bar me-2"></i> Reports</a>
+                <?php } ?>
             </nav>
 
             <div class="user-info pt-3">
