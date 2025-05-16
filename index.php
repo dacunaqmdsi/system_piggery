@@ -14,8 +14,10 @@ if (isset($_POST['signin']) && isset($_SESSION['token']) && $_SESSION['token'] =
 
     $username = mysqli_real_escape_string($db_connection, $_POST['username']);
     $password = mysqli_real_escape_string($db_connection, $_POST['account_password']);
+    $role = mysqli_real_escape_string($db_connection, $_POST['role']); // get account_type from form
 
-    $sql = "SELECT * FROM tblaccounts WHERE username='$username' AND account_password='$password' LIMIT 1";
+    // Fix SQL to properly compare account_type field to the role value
+    $sql = "SELECT * FROM tblaccounts WHERE account_type = '$role' AND username = '$username' AND account_password = '$password' LIMIT 1";
     $rs = mysqli_query($db_connection, $sql);
 
     if ($rs && mysqli_num_rows($rs) === 1) {
@@ -24,18 +26,20 @@ if (isset($_POST['signin']) && isset($_SESSION['token']) && $_SESSION['token'] =
         $_SESSION['username'] = $user['username'];
         $_SESSION['account_type'] = $user['account_type'];
         $_SESSION['is_blocked'] = $user['is_blocked'];
-        Audit($_SESSION['accountid'], 'Login','Login');
+        Audit($_SESSION['accountid'], 'Login', 'Login');
         include('home.php');
         exit();
     } else {
-        $err = '<span style="color:red; font-size:16px;" class="fw-bold blink" >Invalid Username or Password</span>';
+        $err = '<span style="color:red; font-size:16px;" class="fw-bold blink">Invalid Username, Password, or Account Type</span>';
     }
 }
+
 if (isset($_SESSION['accountid'])) {
     include_once('includes/dbconfig.php');
     include('home.php');
     exit(0);
 }
+
 $_SESSION['token'] = rand(1, 100);
 ?>
 
@@ -88,7 +92,7 @@ $_SESSION['token'] = rand(1, 100);
         <!-- STEP 2: LOGIN -->
         <div id="step2" class="bg-white rounded-2xl shadow-lg p-8 text-center hidden relative">
             <!-- Back Button -->
-            <button style="text-decoration:none;" type="button" onclick="goBack()" class="absolute top-4 left-4 text-pink-600 font-semibold text-sm hover:underline">← Back</button>
+            <button type="button" onclick="goBack()" class="absolute top-4 left-4 text-pink-600 font-semibold text-sm hover:underline">← Back</button>
 
             <div class="mb-6 mt-2">
                 <img src="docs/logo.png-removebg-preview.png" alt="Logo" class="w-100 mx-auto mb-4" />
@@ -97,6 +101,8 @@ $_SESSION['token'] = rand(1, 100);
             </div>
 
             <input type="hidden" name="token" value="<?= $_SESSION['token']; ?>">
+            <!-- Persist role here as hidden input -->
+            <input type="hidden" name="role" id="hiddenRole" value="">
 
             <div class="text-left space-y-4">
                 <div>
@@ -125,6 +131,7 @@ $_SESSION['token'] = rand(1, 100);
                 alert("Please select an account type.");
                 return;
             }
+            document.getElementById('hiddenRole').value = role; // set hidden input
             document.getElementById('step1').classList.add('hidden');
             document.getElementById('step2').classList.remove('hidden');
         }
