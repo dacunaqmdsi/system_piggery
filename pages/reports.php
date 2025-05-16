@@ -39,7 +39,7 @@ $num_sales = $data['num_sales'] ?? 0;
                 <option value="yearly">Yearly Report</option>
             </select>
 
-            <button onclick="openCustom('pages/sales_receipt',700,700);" class="btn text-white" style="background-color: #4f46e5;">
+            <button onclick="openCustom('pages/reports_gen?reportType='+document.getElementById('reportType').value,700,700);" class="btn text-white" style="background-color: #4f46e5;">
                 <i class="fas fa-download me-2"></i> Generate Report
             </button>
         </div>
@@ -177,45 +177,80 @@ $num_sales = $data['num_sales'] ?? 0;
 
 
 
-
             <?php
-            // Fetch categories and counts again for chart rendering
+            // Fetch total pigs per pen_type
             $inv_query = mysqli_query($db_connection, "
     SELECT pen_type, SUM(count_) AS total_count 
     FROM tblinventory 
     GROUP BY pen_type
 ");
 
-            $total_query = mysqli_query($db_connection, "SELECT SUM(count_) AS total_pigs FROM tblinventory");
-            $total_row = mysqli_fetch_assoc($total_query);
-            $total_pigs = $total_row['total_pigs'];
+            $pen_totals = [];
+            while ($row = mysqli_fetch_assoc($inv_query)) {
+                $pen_totals[$row['pen_type']] = $row['total_count'];
+            }
+
+            // Fetch affected counts grouped by symptom and pen_type
+            $symptom_query = mysqli_query($db_connection, "
+    SELECT s.symptom, i.pen_type, COUNT(m.monitor_id) AS affected_count
+    FROM tblmonitor m
+    JOIN tblinventory i ON m.pen_number = i.pen_number
+    JOIN tblsymptom s ON m.symptom_id = s.symptom_id
+    GROUP BY s.symptom, i.pen_type
+");
+
+            // Group results by symptom
+            $grouped_data = [];
+            while ($row = mysqli_fetch_assoc($symptom_query)) {
+                $symptom = $row['symptom'];
+                $pen_type = $row['pen_type'];
+                $affected = $row['affected_count'];
+                $total = $pen_totals[$pen_type] ?? 1;
+                $percent = ($affected / $total) * 100;
+
+                $grouped_data[$symptom][] = [
+                    'pen_type' => $pen_type,
+                    'affected' => $affected,
+                    'total' => $total,
+                    'percent' => number_format($percent, 1)
+                ];
+            }
             ?>
 
-
-            <!-- Inventory Status as Simple Chart -->
             <div class="col-lg-6">
                 <div class="bg-white p-4 rounded shadow-sm">
-                    <h5 class="fw-semibold text-dark mb-3">Inventory Status</h5>
-                    <div class="d-flex flex-column gap-2">
-                        <?php while ($inv_row = mysqli_fetch_assoc($inv_query)) :
-                            $pen = $inv_row['pen_type'];
-                            $count = $inv_row['total_count'];
-                            $percent = $total_pigs > 0 ? ($count / $total_pigs) * 100 : 0;
-                        ?>
-                            <div>
-                                <div class="d-flex justify-content-between small fw-semibold">
-                                    <span><?= htmlspecialchars($pen) ?></span>
-                                    <span><?= number_format($count) ?> (<?= round($percent, 1) ?>%)</span>
-                                </div>
-                                <div class="progress" style="height: 10px;">
-                                    <div class="progress-bar bg-primary" style="width: <?= $percent ?>%;"></div>
-                                </div>
-                            </div>
-                        <?php endwhile; ?>
+                    <h5 class="fw-semibold text-dark mb-3">Inventory Health Status by Symptom</h5>
+                    <div class="table-responsive">
+                        <table class="table table-sm table-bordered">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Symptom</th>
+                                    <th>Pen Type</th>
+                                    <th class="text-end">Affected</th>
+                                    <th class="text-end">Total</th>
+                                    <th class="text-end">%</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <?php foreach ($grouped_data as $symptom => $rows): ?>
+                                    <?php foreach ($rows as $index => $data): ?>
+                                        <tr>
+                                            <?php if ($index === 0): ?>
+                                                <td rowspan="<?= count($rows) ?>" class="align-middle fw-bold"><?= htmlspecialchars($symptom) ?></td>
+                                            <?php endif; ?>
+                                            <td><?= htmlspecialchars($data['pen_type']) ?></td>
+                                            <td class="text-end"><?= $data['affected'] ?></td>
+                                            <td class="text-end"><?= $data['total'] ?></td>
+                                            <td class="text-end"><?= $data['percent'] ?>%</td>
+                                        </tr>
+                                    <?php endforeach; ?>
+                                <?php endforeach; ?>
+                            </tbody>
+                        </table>
                     </div>
-                    <div class="text-end mt-3 fw-semibold text-muted small">Total Pigs: <?= number_format($total_pigs) ?></div>
                 </div>
             </div>
+
 
 
         </div>

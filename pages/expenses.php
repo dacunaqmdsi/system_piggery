@@ -1,10 +1,11 @@
-<?php include('../includes/init.php'); is_blocked();?>
+<?php include('../includes/init.php');
+is_blocked(); ?>
 <!-- Header + Buttons -->
 <div class="d-flex justify-content-between align-items-center mb-4">
     <h1 class="h3 fw-bold text-dark">Expenses</h1>
     <div>
-        <button class="btn btn-outline-secondary fw-semibold d-flex align-items-center me-3 px-4 py-2 rounded"
-            data-bs-toggle="modal" data-bs-target="#poModal">
+        <!-- data-bs-toggle="modal" data-bs-target="#poModal" -->
+        <button class="btn btn-outline-secondary fw-semibold d-flex align-items-center me-3 px-4 py-2 rounded" onclick="openCustom('pages/expense_gen',850,850);">
             <i class="fas fa-file-invoice-dollar me-2"></i>
             <span>Generate PO (Low Stock)</span>
         </button>
@@ -220,7 +221,7 @@ if (isset($_POST['edit_expense'])) {
 
 
 <!-- Purchase Order Modal (Bootstrapified Static Version) -->
-<div class="modal fade" id="poModal" tabindex="-1" aria-labelledby="poModalLabel" aria-hidden="true">
+<!-- <div class="modal fade" id="poModal" tabindex="-1" aria-labelledby="poModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered modal-lg">
         <div class="modal-content border-0 rounded shadow">
             <div class="modal-header bg-white border-bottom-0">
@@ -239,4 +240,4 @@ if (isset($_POST['edit_expense'])) {
             </div>
         </div>
     </div>
-</div>
+</div> -->
