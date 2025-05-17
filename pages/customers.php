@@ -88,9 +88,16 @@ if (isset($_POST['edit_customer'])) {
                                 <td>' . htmlspecialchars($row['email']) . '</td>
                                 <td>' . htmlspecialchars($row['address']) . '</td>
                                 <td>' . htmlspecialchars($row['notes']) . '</td>
-                                <td>
-                                    <button onclick="select_customer(' . $row['customerid'] . ');" class="btn btn-sm btn-primary" data-bs-toggle="modal" data-bs-target="#customerEditModal">Edit</button>
-                                </td>
+                                 <td>
+            <button onclick="select_customer(' . $row['customerid'] . ');" 
+                    class="btn btn-sm text-white" 
+                    style="background-color: #e546ad;" 
+                    data-bs-toggle="modal" 
+                    data-bs-target="#customerEditModal" 
+                    title="Edit Customer">
+                <i class="fas fa-edit"></i>
+            </button>
+        </td>
                             </tr>
                         ';
                     }

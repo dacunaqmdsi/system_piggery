@@ -26,6 +26,19 @@ if (isset($_SESSION['accountid'])) {
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" />
     <!-- Font Awesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" />
+    <style>
+        #app-container {
+            padding-top: 56px;
+            /* navbar height */
+        }
+
+        /* Remove button background & border, keep icon white */
+        .btn-transparent:hover,
+        .btn-transparent:focus {
+            background-color: rgba(255, 255, 255, 0.1);
+            color: white;
+        }
+    </style>
 
     <style>
         html,
@@ -967,6 +980,16 @@ if (isset($_SESSION['accountid'])) {
             }
         }
 
+        function update_notif(audit_id) {
+            ajax_fn('pages/notifications.php?audit_id_del=' + audit_id, 'main_content');
+        }
+
+        function update_notifX() {
+            ajax_fn('pages/notifications.php?audit_id_deleeeeeeee=1', 'main_content');
+        }
+
+
+
         function addSaleItem() {
             const container = document.getElementById('sale-items-container');
             const firstRow = container.querySelector('.sale-item-row');
@@ -1047,6 +1070,7 @@ if (isset($_SESSION['accountid'])) {
         function add_edit_symptom(symptom_id = null) {
             const symptom = document.getElementById('symptom').value.trim();
             const suggested_action = document.getElementById('suggested_action').value.trim();
+            const status_ = document.getElementById('status_').value.trim();
             if (!symptom) {
                 alert("Please input a symptom.");
                 return;
@@ -1055,12 +1079,17 @@ if (isset($_SESSION['accountid'])) {
                 alert("Please input a suggested action.");
                 return;
             }
+            if (!status_) {
+                alert("Please input a status.");
+                return;
+            }
 
             const confirmMsg = symptom_id ? "Update this symptom?" : "Create this symptom?";
             if (confirm(confirmMsg)) {
                 const formData = new FormData();
                 formData.append('symptom', symptom);
                 formData.append('suggested_action', suggested_action);
+                formData.append('status_', status_);
                 if (symptom_id) {
                     formData.append('edit_symptom', 1);
                     formData.append('symptom_id', symptom_id);
@@ -1078,6 +1107,7 @@ if (isset($_SESSION['accountid'])) {
                         $('#tmp_content').html(data).css('opacity', '1');
                         document.getElementById('symptom').value = '';
                         document.getElementById('suggested_action').value = '';
+                        document.getElementById('status_').value = '';
                     },
                     error: function() {
                         alert("An error occurred while saving the symptom.");
@@ -1085,11 +1115,106 @@ if (isset($_SESSION['accountid'])) {
                 });
             }
         }
+
+
+        function preview() {
+            // Get sale date and customer id/name
+            const saleDate = document.getElementById('sale_date').value;
+            const customerSelect = document.getElementById('customerid');
+            const customerText = customerSelect.options[customerSelect.selectedIndex].text;
+
+            // Get all sale item rows
+            const itemRows = document.querySelectorAll('#sale-items-container .sale-item-row');
+
+            // Build HTML for items table
+            let itemsHTML = `
+        <table border="1" cellspacing="0" cellpadding="5" style="border-collapse: collapse; width: 100%;">
+            <thead>
+                <tr>
+                    <th>Source Pen</th>
+                    <th>Quantity</th>
+                    <th>Unit Price</th>
+                    <th>Subtotal</th>
+                </tr>
+            </thead>
+            <tbody>
+    `;
+
+            let grandTotal = 0;
+
+            itemRows.forEach(row => {
+                const penSelect = row.querySelector('select[name="inventory_id[]"]');
+                const penText = penSelect.options[penSelect.selectedIndex]?.text || '';
+                const qty = row.querySelector('input[name="qty[]"]').value;
+                const price = row.querySelector('input[name="price[]"]').value;
+
+                const subtotal = qty * price;
+                grandTotal += subtotal;
+
+                itemsHTML += `
+            <tr>
+                <td>${penText}</td>
+                <td style="text-align:center;">${qty}</td>
+                <td style="text-align:right;">₱${parseFloat(price).toFixed(2)}</td>
+                <td style="text-align:right;">₱${subtotal.toFixed(2)}</td>
+            </tr>
+        `;
+            });
+
+            itemsHTML += `
+            </tbody>
+            <tfoot>
+                <tr>
+                    <td colspan="3" style="text-align:right; font-weight:bold;">Grand Total:</td>
+                    <td style="text-align:right; font-weight:bold;">₱${grandTotal.toFixed(2)}</td>
+                </tr>
+            </tfoot>
+        </table>
+    `;
+
+            // Compose full HTML content for preview
+            const previewHTML = `
+        <html>
+        <head>
+            <title>Sale Preview</title>
+            <style>
+                body { font-family: Arial, sans-serif; padding: 20px; }
+                h2 { color: #ec4899; }
+                table { margin-top: 20px; }
+            </style>
+        </head>
+        <body>
+            <h2>Sale Preview</h2>
+            ${itemsHTML}
+        </body>
+        </html>
+    `;
+
+            // Open a new window and write the preview HTML
+            const previewWindow = window.open('', '_blank', 'width=700,height=600,scrollbars=yes');
+            previewWindow.document.open();
+            previewWindow.document.write(previewHTML);
+            previewWindow.document.close();
+        }
     </script>
 </head>
 
 <body class="auth-container">
     <div id="app-container">
+        <nav class="navbar navbar-expand-lg fixed-top" style="background-color: #e546ad;">
+            <div class="container-fluid">
+                <div class="d-flex ms-auto">
+                    <button type="button" class="btn btn-transparent position-relative text-white" onclick="ajax_fn('pages/notifications','main_content')" style="border: none;">
+                        <i class="fas fa-bell fa-lg"></i>
+                        <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger" id="notification-count" style="display:none;">
+                            0
+                            <span class="visually-hidden">unread notifications</span>
+                        </span>
+                    </button>
+                </div>
+            </div>
+        </nav>
+
         <!-- Sidebar -->
         <aside class="sidebar">
             <div class="sidebar-header pb-3 mb-3 text-center">
@@ -1101,7 +1226,7 @@ if (isset($_SESSION['accountid'])) {
 
             <nav>
                 <?php if ($_SESSION['account_type'] == 'Farm Owner') { ?>
-                    <a href="javascript:void(0);" onclick="location.reload();"><i class="fas fa-tachometer-alt me-2"></i> Dashboard</a>
+                    <a href="javascript:void(0);" onclick="window.location.reload();"><i class="fas fa-tachometer-alt me-2"></i> Dashboard</a>
                     <a href="javascript:void(0);" onclick="ajax_fn('pages/inventory','main_content')"><i class="fas fa-boxes me-2"></i> Pig Inventory</a>
                     <a href="javascript:void(0);" onclick="ajax_fn('pages/products','main_content')"><i class="fas fa-shopping-basket me-2"></i> Products</a>
                     <a href="javascript:void(0);" onclick="ajax_fn('pages/sales','main_content')"><i class="fas fa-dollar-sign me-2"></i> Sales</a>
@@ -1133,17 +1258,6 @@ if (isset($_SESSION['accountid'])) {
                 </button>
             </div>
         </aside>
-        <!-- Recent Notifications -->
-        <!-- <div class="col-12">
-                        <div class="bg-white p-4 rounded shadow-sm">
-                            <h5 class="fw-semibold text-secondary mb-3">Recent Notifications</h5>
-                            <div id="recent-notifications-list" class="d-flex flex-column gap-2" style="max-height: 300px; overflow-y: auto;">
-                                <p id="no-recent-notifications" class="text-center text-muted">No recent notifications.</p>
-                            </div>
-                        </div>
-                    </div> -->
-        <!-- Main Content -->
-
 
         <main id="main_content">
 

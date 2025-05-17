@@ -1,4 +1,5 @@
-<?php include('../includes/init.php'); is_blocked(); ?>
+<?php include('../includes/init.php');
+is_blocked(); ?>
 
 <?php
 if (isset($_POST['add_inventory'])) {
@@ -44,7 +45,6 @@ if (isset($_POST['add_inventory'])) {
         echo "<div class='alert alert-danger'>Database error. Please contact the administrator.</div>";
     }
 }
-
 if (isset($_POST['add_birth'])) {
     $mothers_pen_id = intval($_POST['mothers_pen_id']);
     $dob = trim($_POST['dob']);
@@ -57,7 +57,7 @@ if (isset($_POST['add_birth'])) {
         exit;
     }
 
-    // Prepare insert statement
+    // Prepare insert statement for birth record
     $stmt = $db_connection->prepare("
         INSERT INTO tblbirth (pen_number, dob, total_piglets, deaths, alive)
         VALUES (?, ?, ?, ?, ?)
@@ -67,17 +67,43 @@ if (isset($_POST['add_birth'])) {
         $stmt->bind_param("isiii", $mothers_pen_id, $dob, $total_piglets, $deaths, $alive);
 
         if ($stmt->execute()) {
-            // Update inventory only after successful insert
-            $update = mysqli_query(
-                $db_connection,
-                "UPDATE tblinventory SET count_ = count_ + $alive WHERE mothers_pen = $mothers_pen_id"
-            );
+            // Generate piglet pen_number by prefixing mother's pen number
+            $piglet_pen_number = "PIGLET-" . $mothers_pen_id;
 
-            if ($update) {
-                echo "<div class='alert alert-success'>Birth record successfully added and inventory updated.</div>";
+            // Check if an inventory record exists for this mother's pen
+            $checkInventory = $db_connection->prepare("SELECT count_ FROM tblinventory WHERE mothers_pen = ?");
+            $checkInventory->bind_param("i", $mothers_pen_id);
+            $checkInventory->execute();
+            $checkInventory->store_result();
+
+            if ($checkInventory->num_rows > 0) {
+                // Entry exists, update the count_
+                $updateStmt = $db_connection->prepare("UPDATE tblinventory SET count_ = count_ + ? WHERE mothers_pen = ?");
+                $updateStmt->bind_param("ii", $alive, $mothers_pen_id);
+                $updateResult = $updateStmt->execute();
+                $updateStmt->close();
+
+                if ($updateResult) {
+                    echo "<div class='alert alert-success'>Birth record successfully added and inventory updated.</div>";
+                } else {
+                    echo "<div class='alert alert-warning'>Birth record added, but failed to update inventory.</div>";
+                }
             } else {
-                echo "<div class='alert alert-warning'>Birth record added, but inventory update failed.</div>";
+                // No entry exists, insert a new one with piglet pen_number and pen_type 'Piglet'
+                $insertStmt = $db_connection->prepare("INSERT INTO tblinventory (mothers_pen, pen_number, pen_type, count_) VALUES (?, ?, ?, ?)");
+                $pen_type = "Piglet";
+                $insertStmt->bind_param("issi", $mothers_pen_id, $piglet_pen_number, $pen_type, $alive);
+                $insertResult = $insertStmt->execute();
+                $insertStmt->close();
+
+                if ($insertResult) {
+                    echo "<div class='alert alert-success'>Birth record successfully added and new inventory entry created.</div>";
+                } else {
+                    echo "<div class='alert alert-warning'>Birth record added, but failed to create inventory entry.</div>";
+                }
             }
+
+            $checkInventory->close();
         } else {
             echo "<div class='alert alert-danger'>Failed to add birth record. Try again.</div>";
         }
@@ -300,7 +326,13 @@ if (isset($_POST['delete_birth'])) {
                                 <td><?= intval($row['deaths']) ?></td>
                                 <td><?= intval($row['alive']) ?></td>
                                 <td>
-                                    <button class="btn btn-sm btn-danger" onclick="deleteBirth(<?= $row['birth_id'] ?>)">Delete</button>
+                                  <button class="btn btn-sm text-white" 
+        onclick="deleteBirth(<?= $row['birth_id'] ?>)" 
+        style="background-color: #e546ad;" 
+        title="Delete Birth Record">
+    <i class="fas fa-trash-alt"></i>
+</button>
+
                                 </td>
                             </tr>
                         <?php

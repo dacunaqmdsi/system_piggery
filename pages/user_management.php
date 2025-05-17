@@ -1,4 +1,5 @@
-<?php include('../includes/init.php'); is_blocked(); ?>
+<?php include('../includes/init.php');
+is_blocked(); ?>
 <?php
 if (isset($_POST['add_user'])) {
     $username = escape_str($db_connection, $_POST['username']);
@@ -74,7 +75,16 @@ if (isset($_POST['update_user'])) {
                      <td>' . ($rw['is_blocked'] == 0 ? 'Active' : 'Blocked') . '</td>
 
                         <td>';
-                    echo '<a style="text-decoration: none" href="javascript:void(0);" onclick="select_user(' . $rw['accountid'] . ');" data-bs-toggle="modal" data-bs-target="#userEditModal">Edit</a>';
+                    echo '
+    <button onclick="select_user(' . $rw['accountid'] . ');" 
+            class="btn btn-sm text-white" 
+                style="background-color: #e546ad;" 
+                data-bs-toggle="modal" 
+                data-bs-target="#userEditModal" 
+                title="Edit Expense">
+            <i class="fas fa-edit"></i>
+    </button>
+';
                     echo '</td>
                     </tr>';
                 }

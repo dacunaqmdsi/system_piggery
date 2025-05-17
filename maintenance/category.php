@@ -70,9 +70,21 @@ if (isset($_GET['archive_not'])) {
                         echo '<tr>
                             <td>' . htmlspecialchars($rw['category']) . '</td>
                             <td>' . $archived . '</td>
-                                <td><a class="btn btn-primary" style="text-decoration:none;" href="javascript:void(0);" onclick="ajax_fn(\'maintenance/category.php?categoryid=' . $rw['categoryid'] . '\',\'tmp_content\');">Edit</a></td>
-                                <td><a class="btn btn-secondary style="text-decoration:none;" href="javascript:void(0);" onclick="ajax_fn(\'maintenance/category.php?archive_not=' . $rw['categoryid'] . '\',\'tmp_content\');">' . $toggleText . '</a></td>
-                        </tr>';
+                               <td>
+        <button class="btn btn-sm text-white" 
+                style="background-color: #e546ad;" 
+                onclick="ajax_fn(\'maintenance/category.php?categoryid=' . $rw['categoryid'] . '\', \'tmp_content\');" 
+                title="Edit Category">
+            <i class="fas fa-edit"></i>
+        </button>
+    </td>
+    <td>
+        <button class="btn btn-sm btn-secondary" 
+                onclick="ajax_fn(\'maintenance/category.php?archive_not=' . $rw['categoryid'] . '\', \'tmp_content\');" 
+                title="' . htmlspecialchars($toggleText) . '">
+            <i class="fas fa-toggle-' . (strtolower($toggleText) === 'archive' ? 'off' : 'on') . '"></i>
+        </button>
+    </td></tr>';
                     }
                     ?>
                 </tbody>

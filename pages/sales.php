@@ -1,17 +1,6 @@
 <?php include('../includes/init.php');
 is_blocked(); ?>
 <?php
-$_SESSION['tmp_sale'] = 'tmp_sale' . $_SESSION['accountid'];
-$result = mysqli_query($db_connection, 'DROP TABLE IF EXISTS ' . $_SESSION['tmp_sale'] . '') or die(mysqli_error($db_connection));
-$str = "CREATE TABLE " . $_SESSION['tmp_sale'] . " (
-	`id` int(11) NOT NULL AUTO_INCREMENT,
-	`inventory_id` INT(11) DEFAULT 0,
-	`qty` double DEFAULT 0,
-	`price` double DEFAULT 0,
-	primary key(`id`) ) 
-ENGINE=InnoDB DEFAULT CHARSET=latin1;";
-mysqli_query($db_connection, $str) or die(mysqli_error($db_connection));
-
 
 
 if (isset($_POST['add_sales'])) {
@@ -124,10 +113,18 @@ if (isset($_POST['add_sales'])) {
         </button>
 
         <div class="text-end mt-4">
-            <button onclick="process_sale()" class="btn text-white px-4 py-2 fw-semibold"
-                style="background: linear-gradient(135deg, #ec4899 0%, #ec4899 100%);">
-                <i class="fas fa-receipt me-2"></i>Record Sale
-            </button>
+            <!-- Preview Button -->
+<button onclick="preview()" class="btn text-white px-4 py-2 fw-semibold"
+    style="background: linear-gradient(135deg, #e546ad 0%, #e546ad 100%);">
+    <i class="fas fa-eye me-2"></i>Preview
+</button>
+
+<!-- Record Sale Button -->
+<button onclick="process_sale()" class="btn text-white px-4 py-2 fw-semibold"
+    style="background: linear-gradient(135deg, #e546ad 0%, #e546ad 100%);">
+    <i class="fas fa-cash-register me-2"></i>Record Sale
+</button>
+
         </div>
     </div>
 
@@ -169,14 +166,22 @@ if (isset($_POST['add_sales'])) {
                     while ($rw = mysqli_fetch_array($rs)) {
                         $customer = GetValue('SELECT name FROM tblcustomer WHERE customerid = ' . $rw['customerid']);
                         echo '<tr>
-                            <td>' . $rw['receipt_id'] . '</td>
-                            <td>' . date("F j, Y", strtotime($rw['sale_date'])) . '</td>
-                            <td>' . (!empty($customer) ? $customer : 'Guest') . '</td>
-                            <td style="text-align:right;">₱' . number_format($rw['total_amount'], 2) . '&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td>
-                            <td>
-                                <a style="text-decoration:none;" href="javascript:void(0);" onclick="openCustom(\'pages/sales_receipt?sale_id=' . $rw['sale_id'] . '\',700,700);">Print Receipt</a>
-                            </td>
-                    </tr>';
+        <td>' . $rw['receipt_id'] . '</td>
+        <td>' . date("F j, Y", strtotime($rw['sale_date'])) . '</td>
+        <td>' . (!empty($customer) ? $customer : 'Guest') . '</td>
+        <td style="text-align:right;">₱' . number_format($rw['total_amount'], 2) . '&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td>
+        <td>
+            <a 
+                href="javascript:void(0);" 
+                onclick="openCustom(\'pages/sales_receipt?sale_id=' . $rw['sale_id'] . '\',700,700);" 
+                class="btn btn-sm"
+                style="color: #e546ad;" 
+                title="Print Receipt"
+            >
+                <i class="fas fa-print"></i>
+            </a>
+        </td>
+    </tr>';
                     }
                     ?>
 

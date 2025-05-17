@@ -1,4 +1,5 @@
-<?php include('../includes/init.php'); is_blocked(); ?>
+<?php include('../includes/init.php');
+is_blocked(); ?>
 <?php
 if (isset($_POST['add_log'])) {
     $monitor_date = mysqli_real_escape_string($db_connection, $_POST['monitor_date']);
@@ -32,7 +33,16 @@ if (isset($_POST['add_log'])) {
             </div>
             <div class="col-md-6">
                 <label for="log-identifier" class="form-label fw-medium">Pen ID / Pig Tag</label>
-                <input type="text" id="pen_number" class="form-control" placeholder="e.g., Pen F5, Pig #102" required />
+                <!-- <input type="text" id="pen_number" class="form-control" placeholder="e.g., Pen F5, Pig #102" required /> -->
+                <select id="pen_number" class="form-select border-2" style="border-color: #e5e7eb;" required>
+                    <option value="" disabled selected>Select e.g., Pen F5, Pig #102 from Inventory Pig</option>
+                    <?php
+                    $res = mysqli_query($db_connection, "SELECT inventory_id, pen_number, pen_type FROM tblinventory ");
+                    while ($row = mysqli_fetch_assoc($res)) {
+                        echo '<option value="' . $row['pen_number'] . '">' . htmlspecialchars($row['pen_number']) . ' (' . htmlspecialchars($row['pen_type']) . ')</option>';
+                    }
+                    ?>
+                </select>
             </div>
         </div>
         <div class="mb-3">
@@ -63,7 +73,7 @@ if (isset($_POST['add_log'])) {
     <?php
     $query = "
     SELECT a.monitor_id, a.pen_number, a.symptom_id, a.description,
-           b.symptom, b.suggested_action, a.monitor_date
+           b.symptom, b.suggested_action, a.monitor_date, b.status_
     FROM tblmonitor a
     JOIN tblsymptom b ON a.symptom_id = b.symptom_id
     ORDER BY a.monitor_date DESC
@@ -71,6 +81,52 @@ if (isset($_POST['add_log'])) {
 
     $result = mysqli_query($db_connection, $query);
     ?>
+
+    <?php
+    // Query to group by status_ and count
+    $query_ = "
+    SELECT b.status_, COUNT(*) AS status_count
+    FROM tblmonitor a
+    JOIN tblsymptom b ON a.symptom_id = b.symptom_id
+    GROUP BY b.status_
+    ORDER BY b.status_
+";
+
+    $result_ = mysqli_query($db_connection, $query_);
+    ?>
+
+    <div>
+        <h2 class="h5 fw-bold text-dark mb-3">Health Log Status Summary</h2>
+        <div class="card p-3 shadow-sm">
+            <div class="table-responsive">
+                <table class="table table-bordered table-striped align-middle mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th style="width: 70%;">Status</th>
+                            <th style="width: 30%;">Count</th>
+                        </tr>
+                    </thead>
+                    <tbody id="log-history-body">
+                        <?php if (mysqli_num_rows($result_) > 0): ?>
+                            <?php while ($row_ = mysqli_fetch_assoc($result_)): ?>
+                                <tr>
+                                    <td><?= htmlspecialchars($row_['status_']) ?></td>
+                                    <td><?= htmlspecialchars($row_['status_count']) ?></td>
+                                </tr>
+                            <?php endwhile; ?>
+                        <?php else: ?>
+                            <tr>
+                                <td colspan="2" class="text-center text-muted py-3">No status data found.</td>
+                            </tr>
+                        <?php endif; ?>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+
+    <br>
 
     <!-- Log History -->
     <div>
@@ -80,10 +136,12 @@ if (isset($_POST['add_log'])) {
                 <table class="table table-bordered table-striped align-middle mb-0">
                     <thead class="table-light">
                         <tr>
-                            <th style="width: 15%;">Date</th>
-                            <th style="width: 20%;">Pen/Pig</th>
-                            <th style="width: 35%;">Symptoms/Observations</th>
-                            <th style="width: 30%;">Suggested Action</th>
+                            <th style="width: 10%;">Date</th>
+                            <th style="width: 10%;">Pen/Pig</th>
+                            <th style="width: 25%;">Symptoms/Observations</th>
+                            <th style="width: 25%;">Description</th>
+                            <th style="width: 15%;">Suggested Action</th>
+                            <th style="width: 15%;">Status</th>
                         </tr>
                     </thead>
                     <tbody id="log-history-body">
@@ -96,15 +154,18 @@ if (isset($_POST['add_log'])) {
                                         <strong><?= htmlspecialchars($row['symptom']) ?></strong><br>
                                         <small class="text-muted"><?= nl2br(htmlspecialchars($row['description'])) ?></small>
                                     </td>
+                                    <td><?= htmlspecialchars($row['description']); ?></td>
                                     <td><?= htmlspecialchars($row['suggested_action']) ?></td>
+                                    <td><span><?= htmlspecialchars($row['status_']) ?></span></td>
                                 </tr>
                             <?php endwhile; ?>
                         <?php else: ?>
                             <tr>
-                                <td colspan="4" class="text-center text-muted py-3">No health log entries found.</td>
+                                <td colspan="6" class="text-center text-muted py-3">No health log entries found.</td>
                             </tr>
                         <?php endif; ?>
                     </tbody>
+
                 </table>
             </div>
         </div>

@@ -95,9 +95,16 @@ if (isset($_POST['edit_product'])) {
                                 <td>' . htmlspecialchars($row['current_qty']) . '</td>
                                 <td>' . htmlspecialchars($row['unit']) . '</td>
                                 <td>' . htmlspecialchars($row['critical_level']) . '</td>
-                                <td>
-                                    <button onclick="select_product(' . $row['product_id'] . ');" class="btn btn-sm btn-primary" data-bs-toggle="modal" data-bs-target="#productEditModal">Edit</button>
-                                </td>
+                              <td>
+        <button onclick="select_product(' . $row['product_id'] . ');" 
+                 class="btn btn-sm text-white" 
+                style="background-color: #e546ad;" 
+                data-bs-toggle="modal" 
+                data-bs-target="#expenseEditModal" 
+                title="Edit Product">
+            <i class="fas fa-edit"></i>
+        </button>
+    </td>
                             </tr>
                         ';
                     }

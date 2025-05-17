@@ -98,8 +98,15 @@ if (isset($_POST['edit_expense'])) {
                                 <td>' . htmlspecialchars($row['amount']) . '</td>
                                 <td>' . htmlspecialchars($row['refnum']) . '</td>
                                 <td>
-                                    <button onclick="select_expense(' . $row['expenseid'] . ');" class="btn btn-sm btn-primary" data-bs-toggle="modal" data-bs-target="#expenseEditModal">Edit</button>
-                                </td>
+        <button onclick="select_expense(' . $row['expenseid'] . ');" 
+                class="btn btn-sm text-white" 
+                style="background-color: #e546ad;" 
+                data-bs-toggle="modal" 
+                data-bs-target="#expenseEditModal" 
+                title="Edit Expense">
+            <i class="fas fa-edit"></i>
+        </button>
+    </td>
                             </tr>
                         ';
                     }
